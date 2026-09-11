@@ -3,8 +3,6 @@
 from textual.widgets import Static, Input
 from textual.containers import Vertical
 
-from tankuos.theme import theme
-
 
 class ShellPane(Vertical):
     """Simple interactive shell plugin — Input + history display."""
@@ -25,6 +23,11 @@ class ShellPane(Vertical):
         height: 1;
         border: none;
         background: $bg_inset;
+        color: $text_primary;
+    }
+
+    .shell-input:focus {
+        border: none;
     }
     """
     
@@ -58,7 +61,6 @@ class ShellPane(Vertical):
         else:
             content = f"{cmd}: command not found. Try 'help'\n"
         
-        # Use renderable content (cast to str)
         current = str(output.render())
         if current == "None" or not current:
             current = ""

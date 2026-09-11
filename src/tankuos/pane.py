@@ -21,20 +21,20 @@ class Pane(Widget):
     Pane {
         layout: vertical;
         height: 1fr;
-        border: solid $accent;
+        border: solid #22d3ee;
     }
 
     .title-bar {
         height: 1;
         layout: horizontal;
-        background: $accent;
+        background: #22d3ee;
     }
 
     .title-bar Static {
         width: 1fr;
         height: 1;
-        background: $accent;
-        color: $surface;
+        background: #22d3ee;
+        color: #000000;
         text-style: bold;
         padding-left: 1;
     }
@@ -42,14 +42,15 @@ class Pane(Widget):
     .title-bar Button {
         width: auto;
         height: 1;
-        background: $accent;
-        color: $surface;
+        background: #22d3ee;
+        color: #000000;
         border: none;
         padding: 0 1;
     }
 
     .title-bar Button:hover {
-        background: $error;
+        background: #ff5555;
+        color: #ffffff;
     }
 
     #content {
