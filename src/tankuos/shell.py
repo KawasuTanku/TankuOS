@@ -41,6 +41,7 @@ class AppMenuScreen(ModalScreen):
 
     CSS = """
     Screen {
+        background: $surface;
         align: left top;
     }
 
