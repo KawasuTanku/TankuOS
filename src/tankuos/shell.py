@@ -29,7 +29,7 @@ class AppMenuScreen(ModalScreen):
 
     CSS = """
     Screen {
-        align: center top;
+        align: left top;
     }
 
     #app-menu {
@@ -38,7 +38,7 @@ class AppMenuScreen(ModalScreen):
         background: $surface;
         border: solid $accent;
         padding: 1;
-        margin: 2;
+        offset: 2 18;
     }
 
     #app-menu Button {
