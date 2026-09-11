@@ -38,7 +38,7 @@ class AppMenuScreen(ModalScreen):
         background: $surface;
         border: solid $accent;
         padding: 1;
-        offset: 2 18;
+        offset: 18 1;
     }
 
     #app-menu Button {
