@@ -41,11 +41,11 @@ class AppMenuScreen(ModalScreen):
 
     CSS = """
     Screen {
-        align: left top;
+        content-align: left middle;
     }
 
     #app-menu {
-        align: left top;
+        content-align: left middle;
         width: 30;
         height: auto;
         background: $surface;
@@ -54,7 +54,7 @@ class AppMenuScreen(ModalScreen):
     }
 
     #app-menu Button {
-        width: 100%;
+        width: auto;
         height: 1;
         background: $surface;
         border: none;
