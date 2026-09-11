@@ -4,6 +4,7 @@ Spawns a process, reads its output, renders to a TankuOS pane,
 and forwards keyboard input.
 """
 
+import re
 import threading
 from typing import Optional
 
@@ -12,6 +13,14 @@ from textual.widgets import Static
 from textual.message import Message
 
 from tankuos.theme import theme
+
+# ANSI escape code pattern - matches ESC[...m, ESC]...BEL, etc.
+_ANSI_RE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b\[[\?0-9]*[hl]')
+
+
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from text."""
+    return _ANSI_RE.sub('', text)
 
 
 class PaneOutput(Message):
@@ -87,7 +96,8 @@ class Pane(Widget):
                 data = self._process.read(1024)
                 if data:
                     with self._lock:
-                        self._output_lines.append(data)
+                        cleaned = strip_ansi(data)
+                        self._output_lines.append(cleaned)
                         if len(self._output_lines) > 1000:
                             self._output_lines = self._output_lines[-1000:]
                     self.post_message(PaneOutput(self.pane_id, data))
