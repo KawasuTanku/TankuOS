@@ -2,7 +2,7 @@
 
 from textual.widget import Widget
 from textual.widgets import Static, Button
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal
 from textual.app import ComposeResult
 from textual.message import Message
 
@@ -31,38 +31,35 @@ class Pane(Widget):
     .pane-titlebar {
         height: 1;
         layout: horizontal;
-        background: $primary;
+        background: $accent;
         padding: 0;
     }
 
-    .pane-title {
+    .pane-titlebar Static {
         width: 1fr;
-        color: $accent;
+        height: 1;
+        color: $surface;
         text-style: bold;
         padding-left: 1;
     }
 
-    .pane-close {
+    .pane-titlebar Button {
         width: auto;
         height: 1;
-        background: $primary;
-        color: $error;
+        background: $accent;
+        color: $surface;
         border: none;
         padding: 0 1;
     }
 
-    .pane-close:focus {
+    .pane-titlebar Button:focus {
         background: $error;
         color: $surface;
     }
 
-    .pane-close:hover {
+    .pane-titlebar Button:hover {
         background: $error;
         color: $surface;
-    }
-
-    .pane-content {
-        height: 1fr;
     }
     """
 
@@ -74,8 +71,8 @@ class Pane(Widget):
 
     def compose(self) -> ComposeResult:
         with Horizontal(classes="pane-titlebar"):
-            yield Static(self.title, classes="pane-title")
-            yield Button("[x]", classes="pane-close", id=f"close-{self.pane_id}")
+            yield Static(self.title)
+            yield Button("[x]", id=f"close-{self.pane_id}")
         yield self.content_widget
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
