@@ -20,12 +20,6 @@ class Shell(App):
     """The TankuOS desktop shell."""
 
     CSS = """
-    Screen {
-        layout: grid;
-        grid-size: 1;
-        grid-rows: 1fr;
-    }
-
     #desktop {
         layout: horizontal;
     }
@@ -33,7 +27,8 @@ class Shell(App):
     #sidebar {
         width: 25;
         height: 100%;
-        border-right: solid $border-primary;
+        border-right: solid #1e293b;
+        background: #0f1420;
     }
 
     #main-area {
@@ -50,16 +45,17 @@ class Shell(App):
 
     #status-bar {
         height: 3;
-        border-top: solid $border-primary;
+        border-top: solid #1e293b;
+        background: #0f1420;
     }
 
     .pane {
-        border: solid $border-primary;
+        border: solid #1e293b;
         margin: 1;
     }
 
     .pane:focus-within {
-        border: solid $border-focus;
+        border: solid #22d3ee;
     }
     """
 
