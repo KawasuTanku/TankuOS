@@ -134,7 +134,7 @@ class Shell(App):
 
     #pane-grid {
         layout: grid;
-        grid-size: 2 2;
+        grid-size: 1 1;
         height: 1fr;
         padding: 0;
     }
