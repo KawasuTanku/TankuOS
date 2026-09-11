@@ -42,7 +42,7 @@ class AppMenuScreen(ModalScreen):
     }
 
     #app-menu Button {
-        width: auto;
+        width: 100%;
         content-align: left middle;
         height: 1;
         background: $surface;
@@ -129,7 +129,7 @@ class Shell(App):
     }
 
     #statusbar Static {
-        width: auto;
+        width: 100%;
         content-align: left middle;
         color: $accent;
     }
