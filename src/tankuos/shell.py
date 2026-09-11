@@ -69,7 +69,7 @@ class AppMenuScreen(ModalScreen):
         with Vertical(id="app-menu"):
             yield Static("Select Application")
             for name, info in APPS.items():
-                yield Button(f"{info['icon']} {name}", id=name)
+                yield Button(name, id=name)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Return selected app name."""
