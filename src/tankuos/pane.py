@@ -1,4 +1,4 @@
-"""Pane widget — a container for plugin content."""
+"""Pane widget - a container for plugin content."""
 
 from textual.widget import Widget
 from textual.widgets import Static
@@ -15,18 +15,10 @@ class ClosePaneRequest(Message):
 
 
 class Pane(Widget):
-    """A TankuOS pane — hosts a plugin widget with title bar."""
+    """A TankuOS pane - title bar + content."""
 
     CSS = """
     Pane {
-        height: 1fr;
-    }
-
-    #titlebar {
-        height: 1;
-    }
-
-    #content {
         height: 1fr;
     }
     """
@@ -43,16 +35,15 @@ class Pane(Widget):
         yield self.content_widget
 
     def on_mount(self) -> None:
-        self._update_titlebar()
+        self._render_titlebar()
 
     def on_resize(self) -> None:
-        self._update_titlebar()
+        self._render_titlebar()
 
-    def _update_titlebar(self) -> None:
+    def _render_titlebar(self) -> None:
         width = self.size.width or 80
-        text = Text()
-        # Build title line: title + padding + [x]
         padding = max(0, width - len(self.title) - 4)
+        text = Text()
         text.append(" ")
         text.append(self.title, style="bold white on blue")
         text.append(" " * padding, style="on blue")
