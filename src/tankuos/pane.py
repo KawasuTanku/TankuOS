@@ -1,11 +1,10 @@
 """Pane widget — a container for plugin content."""
 
 from textual.widget import Widget
-from textual.widgets import Static
+from textual.widgets import Static, Button
+from textual.containers import Horizontal
 from textual.app import ComposeResult
 from textual.message import Message
-from rich.panel import Panel
-from rich.text import Text
 
 
 class ClosePaneRequest(Message):
@@ -25,12 +24,37 @@ class Pane(Widget):
         border: solid $accent;
     }
 
-    #titlebar {
+    .title-bar {
         height: 1;
+        layout: horizontal;
+        background: $accent;
+    }
+
+    .title-bar Static {
+        width: 1fr;
+        height: 1;
+        background: $accent;
+        color: $surface;
+        text-style: bold;
+        padding-left: 1;
+    }
+
+    .title-bar Button {
+        width: auto;
+        height: 1;
+        background: $accent;
+        color: $surface;
+        border: none;
+        padding: 0 1;
+    }
+
+    .title-bar Button:hover {
+        background: $error;
     }
 
     #content {
         height: 1fr;
+        padding: 0;
     }
     """
 
@@ -41,20 +65,12 @@ class Pane(Widget):
         self.content_widget = content
 
     def compose(self) -> ComposeResult:
-        title_text = Text()
-        title_text.append(" ")
-        title_text.append(self.title, style="bold")
-        title_text.append(" ")
-        title_text.append("[x]", style="bold red")
-        yield Static(title_text, id="titlebar")
+        with Horizontal(classes="title-bar"):
+            yield Static(f"{self.title}")
+            yield Button("[x]")
         self.content_widget.add_class("pane-content")
         yield self.content_widget
 
-    def on_click(self, event):
-        """Click on titlebar [x] closes pane."""
-        widget = event.widget
-        if widget and widget.parent is self:
-            x = event.x
-            width = self.size.width or 80
-            if x >= width - 3:
-                self.post_message(ClosePaneRequest(self.pane_id))
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Close button sends request to parent app."""
+        self.post_message(ClosePaneRequest(self.pane_id))
