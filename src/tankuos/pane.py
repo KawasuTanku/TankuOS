@@ -14,7 +14,7 @@ from textual.message import Message
 
 from tankuos.theme import theme
 
-# ANSI escape code pattern - matches ESC[...m, ESC]...BEL, etc.
+# ANSI escape code pattern
 _ANSI_RE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b\[[\?0-9]*[hl]')
 
 
@@ -37,6 +37,23 @@ class Pane(Widget):
 
     has_focus: bool = False
     can_focus: bool = True
+
+    # Map Textual key names to PTY byte sequences
+    _KEY_MAP = {
+        "enter": "\r",
+        "backspace": "\x7f",
+        "tab": "\t",
+        "escape": "\x1b",
+        "up": "\x1b[A",
+        "down": "\x1b[B",
+        "right": "\x1b[C",
+        "left": "\x1b[D",
+        "home": "\x1b[H",
+        "end": "\x1b[F",
+        "pageup": "\x1b[5~",
+        "pagedown": "\x1b[6~",
+        "delete": "\x1b[3~",
+    }
 
     def __init__(
         self,
@@ -63,7 +80,6 @@ class Pane(Widget):
     def on_mount(self) -> None:
         """Start the child process when the pane mounts."""
         self._start_process()
-        # Force visual refresh every 100ms
         self.set_interval(0.1, self._refresh_content)
 
     def _refresh_content(self) -> None:
@@ -144,10 +160,23 @@ class Pane(Widget):
                 pass
 
     def on_key(self, event) -> None:
-        """Forward key events to the PTY."""
+        """Forward key events to the PTY with proper escape sequence mapping."""
         if not self.has_focus:
             return
-        self.write_input(event.key)
+        
+        # Map special keys to PTY escape sequences
+        key = event.key
+        if key in self._KEY_MAP:
+            self.write_input(self._KEY_MAP[key])
+        elif len(key) == 1:
+            # Regular character
+            self.write_input(key)
+        elif key.startswith("ctrl+"):
+            # Ctrl+key combinations (ctrl+c, ctrl+d, etc.)
+            char = key.replace("ctrl+", "")
+            if len(char) == 1:
+                # Convert to control character (a=0x01, b=0x02, etc.)
+                self.write_input(chr(ord(char) - ord('a') + 1))
 
     def on_focus(self) -> None:
         self.has_focus = True
