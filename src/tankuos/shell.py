@@ -42,12 +42,12 @@ class AppMenuScreen(ModalScreen):
     }
 
     #app-menu Button {
-        width: 100%;
+        width: auto;
         height: 1;
         background: $surface;
         border: none;
-        content-align: left middle;
         text-style: bold;
+        padding: 0 1;
     }
 
     #app-menu Button:focus {
@@ -97,11 +97,11 @@ class Shell(App):
         background: $primary;
         color: $accent;
         border: none;
-        content-align: left middle;
         height: 1;
         min-width: 6;
         padding: 0 1;
         text-style: bold;
+        padding: 0 1;
     }
 
     #menubar Button:focus {
