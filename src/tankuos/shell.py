@@ -14,7 +14,6 @@ from textual.screen import ModalScreen
 from tankuos.theme import theme
 from tankuos.pane import Pane
 
-
 APP_ICONS = {
     "Shell": "\\ue795",
     "Retirement": "\\U000f00d6",
@@ -23,7 +22,6 @@ APP_ICONS = {
     "Glances": "\\U000f0129",
     "default": "\\U000f0b0c",
 }
-
 
 class AppMenuItem:
     """Compat stub — kept for backward compat with tests."""
@@ -35,18 +33,16 @@ class AppMenuItem:
     def render(self) -> str:
         return f"  {self.icon} {self.app_name}"
 
-
 class AppMenuScreen(ModalScreen):
     """App selection modal."""
 
     CSS = """
     Screen {
-        content-align: left middle;
+        align: left top;
     }
 
     #app-menu {
-        content-align: left middle;
-        width: 30;
+        width: auto;
         height: auto;
         background: $surface;
         border: solid $accent;
@@ -59,7 +55,6 @@ class AppMenuScreen(ModalScreen):
         background: $surface;
         border: none;
         text-style: bold;
-        content-align: left middle;
         padding: 0 1;
     }
 
@@ -99,7 +94,6 @@ class AppMenuScreen(ModalScreen):
         """Click outside menu dismisses."""
         if event.widget is self:
             self.dismiss(None)
-
 
 class Shell(App):
     """TankuOS desktop shell."""
@@ -199,7 +193,6 @@ class Shell(App):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         # Clear any active button
         self._clear_active_menu()
-        
         if event.button.id == "menu-apps":
             # Mark this button as active
             event.button.add_class("active")
@@ -265,11 +258,9 @@ class Shell(App):
             self.panes[pane_id].has_focus = True
             self.panes[pane_id].focus()
 
-
 def main():
     shell = Shell()
     shell.run()
-
 
 if __name__ == "__main__":
     main()
