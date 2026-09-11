@@ -6,8 +6,8 @@ Clean step 2: app menu via ModalScreen.
 from typing import Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal
-from textual.widgets import Static, Button, Label, ListView, ListItem
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Static, Button, Label
 from textual.binding import Binding
 from textual.screen import ModalScreen
 
@@ -40,21 +40,22 @@ class AppMenuScreen(ModalScreen):
         offset: 18 1;
     }
 
-    #app-menu ListView {
-        height: auto;
-    }
-
-    #app-menu ListItem {
+    #app-menu Button {
+        width: 100%;
         height: 1;
+        background: $surface;
+        border: none;
+        text-style: bold;
+        content-align: left middle;
         padding: 0 1;
     }
 
-    #app-menu ListItem:focus {
+    #app-menu Button:focus {
         background: $accent;
         color: $surface;
     }
 
-    #app-menu ListItem:hover {
+    #app-menu Button:hover {
         background: $accent;
         color: $surface;
     }
@@ -64,22 +65,22 @@ class AppMenuScreen(ModalScreen):
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
-        items = [ListItem(Label(name), id=name) for name in APPS]
-        yield ListView(*items, id="app-menu")
+        with Vertical(id="app-menu"):
+            for name in APPS:
+                yield Button(name, id=name)
 
-    def on_list_item_selected(self, event: ListView.Selected) -> None:
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         """Return selected app name."""
-        self.dismiss(event.item.id)
-
-    def on_click(self, event) -> None:
-        """Click outside menu dismisses."""
-        if event.widget is self:
-            self.dismiss(None)
+        self.dismiss(event.button.id)
 
     def on_key(self, event) -> None:
         if event.key == "escape":
             self.dismiss(None)
 
+    def on_click(self, event) -> None:
+        """Click outside menu dismisses."""
+        if event.widget is self:
+            self.dismiss(None)
 
 
 class Shell(App):
@@ -175,7 +176,7 @@ class Shell(App):
             self.action_toggle_apps()
         elif event.button.id == "menu-help":
             self.action_help()
-        else:
+        elif event.button.id in ["menu-file", "menu-edit", "menu-view"]:
             self.notify(f"{event.button.id} (not yet)")
 
     def action_cycle_theme(self) -> None:
