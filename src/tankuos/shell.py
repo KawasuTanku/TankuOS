@@ -50,7 +50,7 @@ class AppMenuScreen(ModalScreen):
         height: auto;
         background: $surface;
         border: solid $accent;
-        offset: 22 1;
+        offset: 16 1;
     }
 
     .menu-row {
