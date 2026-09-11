@@ -55,12 +55,22 @@ class Pane(Widget):
 
     def compose(self):
         """Compose the pane — title bar + content area."""
-        yield PaneTitleBar(self.title, self.pane_id)
-        yield PaneContent(self.pane_id)
+        yield PaneTitleBar(self.title, self.pane_id, id=f"title-{self.pane_id}")
+        yield PaneContent(self.pane_id, id=f"content-{self.pane_id}")
 
     def on_mount(self) -> None:
         """Start the child process when the pane mounts."""
         self._start_process()
+        # Force visual refresh every 100ms
+        self.set_interval(0.1, self._refresh_content)
+
+    def _refresh_content(self) -> None:
+        """Periodic visual refresh."""
+        try:
+            content = self.query_one(f"#content-{self.pane_id}", PaneContent)
+            content.refresh()
+        except Exception:
+            pass
 
     def _start_process(self) -> None:
         """Spawn the child process in a PTY."""
@@ -128,7 +138,7 @@ class Pane(Widget):
             try:
                 content = self.query_one(f"#content-{self.pane_id}", PaneContent)
                 with self._lock:
-                    content.text = "".join(self._output_lines)
+                    content.content = "".join(self._output_lines)
                 content.scroll_end()
             except Exception:
                 pass
@@ -181,13 +191,18 @@ class PaneTitleBar(Static):
 class PaneContent(Static):
     """Content area of a pane — displays process output."""
 
-    text: str = ""
+    content: str = ""
 
     def __init__(self, pane_id: str = "", **kwargs) -> None:
         super().__init__(**kwargs)
         self.pane_id = pane_id
         self.add_class("pane-content")
 
+    def watch_content(self, new_value: str) -> None:
+        """Refresh when output changes."""
+        self.update(new_value)
+        self.refresh()
+
     def render(self):
         p = theme.palette
-        return self.text or f"[{p.text_secondary}]...[/{p.text_secondary}]"
+        return self.content or f"[{p.text_secondary}]...[/{p.text_secondary}]"
