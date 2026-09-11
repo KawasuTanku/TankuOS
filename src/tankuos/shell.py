@@ -48,7 +48,7 @@ class AppMenuScreen(ModalScreen):
 
     CSS = """
     Screen {
-        align: top middle;
+        align: center top;
     }
 
     #app-menu {
