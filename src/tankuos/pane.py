@@ -27,8 +27,9 @@ class PaneTitleBar(Static):
     def render(self):
         p = theme.palette
         width = self.size.width or 80
-        title_text = f"{self.title:<{width - 5}}[x]"
-        return f"[{p.accent_primary}]{title_text}[/{p.accent_primary}]"
+        # Use Rich markup with actual colors
+        title_text = f"{self.title:<{width - 5}}[bold]  [x][/bold]"
+        return title_text
 
     def on_click(self, event):
         """Click on [x] closes pane."""
