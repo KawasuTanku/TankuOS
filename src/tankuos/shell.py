@@ -45,7 +45,7 @@ class AppMenuScreen(ModalScreen):
     }
 
     #app-menu {
-        width: auto;
+        width: 20;
         height: auto;
         background: $surface;
         border: solid $accent;
@@ -53,9 +53,9 @@ class AppMenuScreen(ModalScreen):
     }
 
     .menu-row {
-        width: 100%;
+        width: 20;
         height: 1;
-        padding: 0 1;
+        padding: 0;
     }
 
     .menu-row:hover {
@@ -105,7 +105,7 @@ class Shell(App):
     #menubar {
         height: 1;
         background: $primary;
-        padding: 0 1;
+        padding: 0;
     }
 
     #menubar Button {
@@ -114,7 +114,7 @@ class Shell(App):
         border: none;
         height: 1;
         min-width: 6;
-        padding: 0 1;
+        padding: 0;
         text-style: bold;
     }
 
@@ -143,11 +143,11 @@ class Shell(App):
     #statusbar {
         height: 1;
         background: $secondary;
-        padding: 0 1;
+        padding: 0;
     }
 
     #statusbar Static {
-        width: auto;
+        width: 20;
         color: $accent;
     }
     """
