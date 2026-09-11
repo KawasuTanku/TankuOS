@@ -1,11 +1,10 @@
-"""Pane widget — a container for plugin content."""
+"""Pane widget - a container for plugin content."""
 
 from textual.widget import Widget
 from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.message import Message
 from rich.text import Text
-from rich.panel import Panel
 
 
 class ClosePaneRequest(Message):
@@ -16,19 +15,25 @@ class ClosePaneRequest(Message):
 
 
 class Pane(Widget):
-    """A TankuOS pane — hosts a plugin widget with title bar."""
+    """A TankuOS pane - hosts a plugin widget with title bar."""
 
     CSS = """
     Pane {
         layout: vertical;
         height: 1fr;
-        border: ascii $accent;
-        margin: 1;
+        margin: 0;
+        padding: 0;
     }
 
     #titlebar {
-        height: 1;
-        background: #1a1a40;
+        height: 2;
+    }
+
+    #content {
+        height: 1fr;
+        border-left: solid yellow;
+        border-right: solid yellow;
+        border-bottom: solid yellow;
     }
     """
 
@@ -52,17 +57,18 @@ class Pane(Widget):
         self._update_titlebar()
 
     def _update_titlebar(self) -> None:
-        """Render title bar with Rich Text, including top border."""
+        """Render title bar with ASCII borders for window look."""
         width = self.size.width or 80
         text = Text()
-        # Top border line
-        text.append("+" + "-" * (width - 2) + "+\n", style="bold cyan")
+        # Top border with corners
+        text.append("+" + "-" * (width - 2) + "+\n", style="bold yellow")
         # Title line with side borders
-        padding = max(0, width - len(self.title) - 4)
+        title_len = len(self.title)
+        padding = max(0, width - title_len - 5)
         text.append("| ")
-        text.append(self.title, style="bold white on #1a1a40")
+        text.append(self.title, style="bold white")
         text.append(" " * padding)
-        text.append("[x]", style="bold red on #1a1a40")
+        text.append("[x]", style="bold red")
         text.append(" |")
         titlebar = self.query_one("#titlebar", Static)
         titlebar.update(text)
@@ -72,9 +78,10 @@ class Pane(Widget):
         widget = event.widget
         if widget and widget.id == "titlebar":
             x = event.x
+            y = event.y
             width = self.size.width or 80
-            # Check if click is in the [x] area (second line)
-            if event.y >= 1 and x >= width - 5:
+            # Click on [x] in second row
+            if y == 1 and x >= width - 5:
                 self.post_message(ClosePaneRequest(self.pane_id))
 
     def on_close_pane_request(self, message: ClosePaneRequest) -> None:
