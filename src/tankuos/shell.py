@@ -1,9 +1,6 @@
 """Core shell — TankuOS retro desktop.
 
-Clean step 1: static retro layout.
-  - Single-line menu bar at top
-  - Full-width workspace with ASCII-bordered pane
-  - Status bar at bottom with key hints
+Clean step 2: app menu via ModalScreen.
 """
 
 from typing import Dict, Optional
@@ -12,19 +9,83 @@ from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Static, Button, Label
 from textual.binding import Binding
+from textual.screen import ModalScreen
 
 from tankuos.theme import theme
 
 
+# App registry
+APPS = {
+    "Shell": {"icon": "", "description": "Terminal shell"},
+    "Retirement": {"icon": "󰃖", "description": "IRA portfolio tracker"},
+    "Monster": {"icon": "󰍵", "description": "Energy drink P&L"},
+    "MontcoMonitor": {"icon": "󰜟", "description": "VoIP monitor"},
+    "Glances": {"icon": "󰄩", "description": "System monitor"},
+}
+
+
+class AppMenuScreen(ModalScreen):
+    """App selection modal."""
+
+    CSS = """
+    Screen {
+        align: center top;
+    }
+
+    #app-menu {
+        width: 30;
+        height: auto;
+        background: $surface;
+        border: solid $accent;
+        padding: 1;
+        margin: 2;
+    }
+
+    #app-menu Button {
+        width: 100%;
+        height: 1;
+        background: $surface;
+        border: none;
+        text-style: bold;
+    }
+
+    #app-menu Button:focus {
+        background: $accent;
+        color: $surface;
+    }
+
+    #app-menu Button:hover {
+        background: $accent;
+        color: $surface;
+    }
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="app-menu"):
+            yield Label("Select Application")
+            for name, info in APPS.items():
+                yield Button(f" {info['icon']} {name}", id=name)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Return selected app name."""
+        self.dismiss(event.button.id)
+
+    def on_key(self, event) -> None:
+        if event.key == "escape":
+            self.dismiss(None)
+
+
 class Shell(App):
-    """TankuOS desktop shell — retro Pascal IDE style."""
+    """TankuOS desktop shell."""
 
     CSS = """
     #desktop {
         layout: vertical;
     }
 
-    /* Menu bar */
     #menubar {
         height: 1;
         background: $primary;
@@ -46,13 +107,11 @@ class Shell(App):
         color: $surface;
     }
 
-    /* Workspace */
     #workspace {
         height: 1fr;
         padding: 1;
     }
 
-    /* Pane grid */
     #pane-grid {
         layout: grid;
         grid-size: 2 2;
@@ -60,7 +119,6 @@ class Shell(App):
         padding: 0;
     }
 
-    /* Status bar */
     #statusbar {
         height: 1;
         background: $secondary;
@@ -85,9 +143,7 @@ class Shell(App):
         self.theme_name = "turbopascal"
 
     def compose(self) -> ComposeResult:
-        """Compose the desktop."""
         with Container(id="desktop"):
-            # Menu bar
             with Horizontal(id="menubar"):
                 yield Button("File", id="menu-file")
                 yield Button("Edit", id="menu-edit")
@@ -95,12 +151,10 @@ class Shell(App):
                 yield Button("Apps", id="menu-apps")
                 yield Button("Help", id="menu-help")
 
-            # Workspace with a single pane placeholder
             with Container(id="workspace"):
                 with Container(id="pane-grid"):
                     yield Static("Pane content here", id="pane-main")
 
-            # Status bar
             with Horizontal(id="statusbar"):
                 yield Static(" F1 Help")
                 yield Static(" F2 Theme")
@@ -108,17 +162,19 @@ class Shell(App):
                 yield Static(" Q Quit")
 
     def on_mount(self) -> None:
-        """Initialize."""
         self.title = "TankuOS"
         self.sub_title = "Retro Desktop"
         theme.set_palette(self.theme_name)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle menu clicks."""
-        self.notify(f"{event.button.id} clicked")
+        if event.button.id == "menu-apps":
+            self.action_toggle_apps()
+        elif event.button.id == "menu-help":
+            self.action_help()
+        else:
+            self.notify(f"{event.button.id} (not yet)")
 
     def action_cycle_theme(self) -> None:
-        """Cycle themes."""
         themes = ["turbopascal", "midnight", "nord", "gruvbox"]
         idx = themes.index(self.theme_name)
         self.theme_name = themes[(idx + 1) % len(themes)]
@@ -126,20 +182,20 @@ class Shell(App):
         self.notify(f"Theme: {self.theme_name}")
 
     def action_toggle_apps(self) -> None:
-        """Open app menu (placeholder)."""
-        self.notify("Apps menu (step 2)")
+        self.push_screen(AppMenuScreen(), self._on_app_selected)
+
+    def _on_app_selected(self, app_name: Optional[str]) -> None:
+        if app_name:
+            self.notify(f"Selected: {app_name}")
 
     def action_help(self) -> None:
-        """Show help."""
-        self.notify("TankuOS — Retro Desktop Environment")
+        self.notify("TankuOS — Retro Desktop | F2: Theme | F3: Apps | Q: Quit")
 
     def action_quit(self) -> None:
-        """Quit."""
         self.exit()
 
 
 def main():
-    """Entry point."""
     shell = Shell()
     shell.run()
 
