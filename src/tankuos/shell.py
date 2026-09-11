@@ -71,9 +71,15 @@ class AppMenuScreen(ModalScreen):
         """Return selected app name."""
         self.dismiss(event.item.id)
 
+    def on_click(self, event) -> None:
+        """Click outside menu dismisses."""
+        if event.widget is self:
+            self.dismiss(None)
+
     def on_key(self, event) -> None:
         if event.key == "escape":
             self.dismiss(None)
+
 
 
 class Shell(App):
