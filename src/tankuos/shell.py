@@ -1,6 +1,7 @@
 """Core shell — the main TankuOS desktop.
 
 Manages panes in a grid, provides dropdown app menu and status bar.
+Based on WarpStrand-Client's topbar pattern.
 """
 
 from typing import Dict, List, Optional
@@ -12,7 +13,7 @@ from textual.css.query import NoMatches
 from textual.binding import Binding
 from textual import work
 
-from tankuos.theme import theme, TankuHeader, TankuFooter
+from tankuos.theme import theme, TankuHeader
 from tankuos.pane import Pane
 
 
@@ -50,26 +51,25 @@ class Shell(App):
         layout: vertical;
     }
 
-    #header {
+    #topbar {
         height: 1;
-        border-bottom: solid #1e293b;
-        background: #0f1420;
-        layout: horizontal;
+        background: $primary;
     }
 
-    #header-apps {
-        width: 18;
-        content-align: left middle;
+    #tb_left {
+        width: auto;
         padding-left: 1;
+        color: $accent;
+        text-style: bold;
     }
 
-    #header-spacer {
+    #tb_center {
         width: 1fr;
+        text-align: center;
     }
 
-    #header-status {
-        width: 30;
-        content-align: right middle;
+    #tb_right {
+        width: auto;
         padding-right: 1;
     }
 
@@ -85,32 +85,48 @@ class Shell(App):
         padding: 1;
     }
 
-    #status-bar {
+    #bottombar {
         height: 1;
-        border-top: solid #1e293b;
-        background: #0f1420;
+        background: $secondary;
+    }
+
+    #bb_left {
+        width: auto;
+        padding-left: 1;
+        color: $accent;
+    }
+
+    #bb_center {
+        width: 1fr;
+        text-align: center;
+    }
+
+    #bb_right {
+        width: auto;
+        padding-right: 1;
+        color: $success;
     }
 
     .pane {
-        border: solid #1e293b;
+        border: solid $primary;
         margin: 1;
     }
 
     .pane:focus-within {
-        border: solid #22d3ee;
+        border: solid $accent;
     }
 
     .dropdown-item {
         display: none;
-        background: #141b2d;
-        border: solid #1e293b;
+        background: $surface;
+        border: solid $primary;
         min-width: 20;
         height: 1;
     }
 
     .dropdown-item:focus {
-        background: #1e293b;
-        border: solid #22d3ee;
+        background: $primary;
+        border: solid $accent;
     }
     """
 
@@ -138,11 +154,11 @@ class Shell(App):
     def compose(self) -> ComposeResult:
         """Compose the desktop layout."""
         with Container(id="desktop"):
-            # Header bar with TankuOS menu and status
-            with Container(id="header"):
-                yield Label(" 󰲌 TankuOS ▾", id="header-apps")
-                yield Static("", id="header-spacer")
-                yield Label("󰥔  --:--  󰍛 --%", id="header-status")
+            # Top bar — WarpStrand-Client style
+            with Horizontal(id="topbar"):
+                yield Static("TankuOS ▾", id="tb_left")
+                yield Static("", id="tb_center")
+                yield Static("CPU --%  MEM --%", id="tb_right")
 
             # Main area with pane grid
             with Container(id="main-area"):
@@ -156,7 +172,12 @@ class Shell(App):
                     )
                     self.panes["main"] = pane
                     yield pane
-                yield TankuFooter(status="TankuOS ready", id="status-bar")
+
+            # Bottom bar — WarpStrand-Client style
+            with Horizontal(id="bottombar"):
+                yield Static("● TankuOS ready", id="bb_left")
+                yield Static("F1 Help  F2 Theme  F3 Apps", id="bb_center")
+                yield Static("● OK", id="bb_right")
 
     def on_mount(self) -> None:
         """Initialize the shell."""
