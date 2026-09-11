@@ -1,7 +1,7 @@
 """Tests for TankuOS core shell and pane."""
 
 import pytest
-from tankuos.shell import Shell, AppDropdown, AppMenuItem, APP_ICONS
+from tankuos.shell import Shell, AppMenuItem, APP_ICONS
 from tankuos.pane import Pane, PaneTitleBar, PaneContent
 from tankuos.theme import theme, Theme
 
@@ -31,14 +31,7 @@ class TestAppMenuItem:
         assert "󰲌" in result
 
 
-class TestAppDropdown:
-    def test_create(self):
-        dropdown = AppDropdown(apps={"Shell": "", "Test": "󰲌"})
-        assert len(dropdown.apps) == 2
 
-    def test_default_apps(self):
-        dropdown = AppDropdown()
-        assert dropdown.apps == {}
 
 
 class TestPane:

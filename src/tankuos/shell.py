@@ -42,47 +42,6 @@ class AppMenuItem(Button):
         return f"[{p.text_primary}] {self.icon}  {self.app_name}[/]"
 
 
-class AppDropdown(Vertical):
-    """Dropdown application menu."""
-
-    expanded: bool = False
-
-    def __init__(self, apps: Dict[str, str] = None, **kwargs):
-        super().__init__(**kwargs)
-        self.apps = apps or {}
-        self.selected = 0
-
-    def compose(self) -> ComposeResult:
-        """Compose the dropdown button + menu items."""
-        p = theme.palette
-        yield Button(
-            label=f"󰲌  TankuOS  ▾",
-            id="dropdown-toggle",
-            classes="dropdown-toggle",
-        )
-        for name, icon in self.apps.items():
-            yield AppMenuItem(name=name, icon=icon, classes="dropdown-item")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Toggle dropdown on toggle button press."""
-        if event.button.id == "dropdown-toggle":
-            self.expanded = not not self.expanded
-            for item in self.query(".dropdown-item"):
-                item.display = self.expanded
-
-    def on_key(self, event) -> None:
-        """Handle arrow keys for navigation."""
-        if not self.expanded:
-            return
-        items = list(self.query(".dropdown-item"))
-        if event.key == "down":
-            self.selected = (self.selected + 1) % len(items)
-            items[self.selected].focus()
-        elif event.key == "up":
-            self.selected = (self.selected - 1) % len(items)
-            items[self.selected].focus()
-
-
 class Shell(App):
     """The TankuOS desktop shell."""
 
@@ -100,7 +59,8 @@ class Shell(App):
 
     #header-apps {
         width: 18;
-        content-align: center middle;
+        content-align: left middle;
+        padding-left: 1;
     }
 
     #header-spacer {
@@ -140,18 +100,6 @@ class Shell(App):
         border: solid #22d3ee;
     }
 
-    .dropdown-toggle {
-        background: #141b2d;
-        border: solid #1e293b;
-        color: #22d3ee;
-        min-width: 12;
-        height: 1;
-    }
-
-    .dropdown-toggle:focus {
-        border: solid #22d3ee;
-    }
-
     .dropdown-item {
         display: none;
         background: #141b2d;
@@ -185,13 +133,14 @@ class Shell(App):
             "MontcoMonitor": APP_ICONS["MontcoMonitor"],
             "Glances": APP_ICONS["Glances"],
         }
+        self.dropdown_expanded = False
 
     def compose(self) -> ComposeResult:
         """Compose the desktop layout."""
         with Container(id="desktop"):
             # Header bar with TankuOS menu and status
             with Container(id="header"):
-                yield AppDropdown(apps=self.apps, id="header-apps")
+                yield Label(" 󰲌 TankuOS ▾", id="header-apps")
                 yield Static("", id="header-spacer")
                 yield Label("󰥔  --:--  󰍛 --%", id="header-status")
 
@@ -223,13 +172,10 @@ class Shell(App):
 
     def action_toggle_launcher(self) -> None:
         """Toggle the app dropdown."""
-        try:
-            dropdown = self.query_one("#header-apps", AppDropdown)
-            dropdown.expanded = not dropdown.expanded
-            for item in dropdown.query(".dropdown-item"):
-                item.display = dropdown.expanded
-        except NoMatches:
-            pass
+        self.dropdown_expanded = not self.dropdown_expanded
+        # Show/hide dropdown items
+        for item in self.query(".dropdown-item"):
+            item.display = self.dropdown_expanded
 
     def action_help(self) -> None:
         """Show help."""
