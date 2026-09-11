@@ -21,10 +21,10 @@ TankuOS provides the chrome — window management, theming, layout persistence, 
 - [x] Pane management (open, close, focus, resize)
 - [x] Child process hosting (PTY)
 
-### Chunk 3: Layout Persistence
-- [ ] Save/restore pane positions to TOML
-- [ ] Remember which apps were open
-- [ ] Multiple named layouts
+### Chunk 3: Layout Persistence ✅ (current)
+- [x] Save/restore pane positions to TOML
+- [x] Remember which apps were open
+- [x] Multiple named layouts
 
 ### Chunk 4: Password Lock
 - [ ] Per-app lock toggle
