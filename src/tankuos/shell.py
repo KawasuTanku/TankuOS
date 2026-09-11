@@ -12,7 +12,7 @@ from textual.css.query import NoMatches
 from textual.binding import Binding
 from textual import work
 
-from tankuos.theme import theme, TankuHeader, TankuFooter, TankuSidebar
+from tankuos.theme import theme, TankuHeader, TankuFooter
 from tankuos.pane import Pane
 
 
@@ -56,7 +56,7 @@ class AppDropdown(Vertical):
         """Compose the dropdown button + menu items."""
         p = theme.palette
         yield Button(
-            label=f"󰍜  Apps  ▾",
+            label=f"󰲌  TankuOS  ▾",
             id="dropdown-toggle",
             classes="dropdown-toggle",
         )
@@ -98,14 +98,8 @@ class Shell(App):
         layout: horizontal;
     }
 
-    #header-title {
-        width: 20;
-        content-align: left middle;
-        padding-left: 1;
-    }
-
     #header-apps {
-        width: 15;
+        width: 18;
         content-align: center middle;
     }
 
@@ -193,9 +187,8 @@ class Shell(App):
     def compose(self) -> ComposeResult:
         """Compose the desktop layout."""
         with Container(id="desktop"):
-            # Header bar with title, apps dropdown, and status
+            # Header bar with TankuOS menu and status
             with Container(id="header"):
-                yield Label("󰲌 TankuOS", id="header-title")
                 yield AppDropdown(apps=self.apps, id="header-apps")
                 yield Static("", id="header-spacer")
                 yield Label("󰥔  --:--  󰍛 --%", id="header-status")
