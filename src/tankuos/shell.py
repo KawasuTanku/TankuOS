@@ -1,6 +1,6 @@
 """Core shell — the main TankuOS desktop.
 
-Manages panes in a grid, provides launcher sidebar and status bar.
+Manages panes in a grid, provides dropdown app menu and status bar.
 """
 
 from typing import Dict, List, Optional
@@ -16,24 +16,112 @@ from tankuos.theme import theme, TankuHeader, TankuFooter, TankuSidebar
 from tankuos.pane import Pane
 
 
+# Nerd Font icons for apps
+APP_ICONS = {
+    "Shell": "",        # nf-fa-terminal
+    "Retirement": "󰃖",   # nf-mdi-chart_line
+    "Monster": "󰍵",     # nf-mdi-cash
+    "MontcoMonitor": "󰜟", # nf-mdi-phone
+    "Glances": "󰄩",     # nf-mdi-monitor_dashboard
+    "default": "󰲌",     # nf-mdi-application
+}
+
+
+class AppMenuItem(Button):
+    """A single app entry in the dropdown menu."""
+
+    def __init__(self, name: str, icon: str = "", **kwargs):
+        super().__init__(**kwargs)
+        self.app_name = name
+        self.icon = icon or APP_ICONS.get("default", "󰲌")
+
+    def render(self):
+        p = theme.palette
+        if self.has_focus:
+            return f"[{p.bg_surface} {p.accent_primary}] {self.icon}  {self.app_name}[/]"
+        return f"[{p.text_primary}] {self.icon}  {self.app_name}[/]"
+
+
+class AppDropdown(Vertical):
+    """Dropdown application menu."""
+
+    expanded: bool = False
+
+    def __init__(self, apps: Dict[str, str] = None, **kwargs):
+        super().__init__(**kwargs)
+        self.apps = apps or {}
+        self.selected = 0
+
+    def compose(self) -> ComposeResult:
+        """Compose the dropdown button + menu items."""
+        p = theme.palette
+        yield Button(
+            label=f"󰍜  Apps  ▾",
+            id="dropdown-toggle",
+            classes="dropdown-toggle",
+        )
+        for name, icon in self.apps.items():
+            yield AppMenuItem(name=name, icon=icon, classes="dropdown-item")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Toggle dropdown on toggle button press."""
+        if event.button.id == "dropdown-toggle":
+            self.expanded = not not self.expanded
+            for item in self.query(".dropdown-item"):
+                item.display = self.expanded
+
+    def on_key(self, event) -> None:
+        """Handle arrow keys for navigation."""
+        if not self.expanded:
+            return
+        items = list(self.query(".dropdown-item"))
+        if event.key == "down":
+            self.selected = (self.selected + 1) % len(items)
+            items[self.selected].focus()
+        elif event.key == "up":
+            self.selected = (self.selected - 1) % len(items)
+            items[self.selected].focus()
+
+
 class Shell(App):
     """The TankuOS desktop shell."""
 
     CSS = """
     #desktop {
+        layout: vertical;
+    }
+
+    #header {
+        height: 3;
+        border-bottom: solid #1e293b;
+        background: #0f1420;
         layout: horizontal;
     }
 
-    #sidebar {
-        width: 25;
-        height: 100%;
-        border-right: solid #1e293b;
-        background: #0f1420;
+    #header-title {
+        width: 20;
+        content-align: left middle;
+        padding-left: 1;
+    }
+
+    #header-apps {
+        width: 15;
+        content-align: center middle;
+    }
+
+    #header-spacer {
+        width: 1fr;
+    }
+
+    #header-status {
+        width: 30;
+        content-align: right middle;
+        padding-right: 1;
     }
 
     #main-area {
         layout: vertical;
-        width: 1fr;
+        height: 1fr;
     }
 
     #pane-grid {
@@ -57,28 +145,62 @@ class Shell(App):
     .pane:focus-within {
         border: solid #22d3ee;
     }
+
+    .dropdown-toggle {
+        background: #141b2d;
+        border: solid #1e293b;
+        color: #22d3ee;
+        min-width: 12;
+    }
+
+    .dropdown-toggle:focus {
+        border: solid #22d3ee;
+    }
+
+    .dropdown-item {
+        display: none;
+        background: #141b2d;
+        border: solid #1e293b;
+        min-width: 20;
+    }
+
+    .dropdown-item:focus {
+        background: #1e293b;
+        border: solid #22d3ee;
+    }
     """
 
     BINDINGS = [
         Binding("f1", "help", "Help"),
         Binding("f2", "cycle_theme", "Theme"),
-        Binding("f3", "toggle_launcher", "Launcher"),
+        Binding("f3", "toggle_launcher", "Apps"),
         Binding("q", "quit", "Quit"),
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, apps: Optional[Dict[str, str]] = None, **kwargs):
         super().__init__(**kwargs)
         self.panes: Dict[str, Pane] = {}
         self.active_pane_id: Optional[str] = None
         self.theme_name = "midnight"
+        self.apps = apps or {
+            "Shell": APP_ICONS["Shell"],
+            "Retirement": APP_ICONS["Retirement"],
+            "Monster": APP_ICONS["Monster"],
+            "MontcoMonitor": APP_ICONS["MontcoMonitor"],
+            "Glances": APP_ICONS["Glances"],
+        }
 
     def compose(self) -> ComposeResult:
         """Compose the desktop layout."""
         with Container(id="desktop"):
-            yield TankuSidebar(
-                items=["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"],
-                id="sidebar",
-            )
+            # Header bar with title, apps dropdown, and status
+            with Container(id="header"):
+                yield Label("󰲌 TankuOS", id="header-title")
+                yield AppDropdown(apps=self.apps, id="header-apps")
+                yield Static("", id="header-spacer")
+                yield Label("󰥔  --:--  󰍛 --%", id="header-status")
+
+            # Main area with pane grid
             with Container(id="main-area"):
                 with Container(id="pane-grid"):
                     # Default: one shell pane
@@ -105,19 +227,18 @@ class Shell(App):
         theme.set_palette(self.theme_name)
 
     def action_toggle_launcher(self) -> None:
-        """Toggle the launcher sidebar."""
+        """Toggle the app dropdown."""
         try:
-            sidebar = self.query_one("#sidebar", TankuSidebar)
-            if sidebar.display:
-                sidebar.display = False
-            else:
-                sidebar.display = True
+            dropdown = self.query_one("#header-apps", AppDropdown)
+            dropdown.expanded = not dropdown.expanded
+            for item in dropdown.query(".dropdown-item"):
+                item.display = dropdown.expanded
         except NoMatches:
             pass
 
     def action_help(self) -> None:
         """Show help."""
-        self.notify("F1 Help | F2 Theme | F3 Launcher | Q Quit")
+        self.notify("F1 Help | F2 Theme | F3 Apps | Q Quit")
 
     def add_pane(self, title: str, command: str, pane_id: str = "") -> Pane:
         """Add a new pane to the desktop."""
