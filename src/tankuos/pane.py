@@ -1,10 +1,12 @@
 """Pane widget — a container for plugin content."""
 
 from textual.widget import Widget
-from textual.widgets import Static, Button
-from textual.containers import Horizontal
+from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.message import Message
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
 
 
 class ClosePaneRequest(Message):
@@ -12,6 +14,31 @@ class ClosePaneRequest(Message):
     def __init__(self, pane_id: str) -> None:
         super().__init__()
         self.pane_id = pane_id
+
+
+class PaneTitleBar(Static):
+    """Title bar rendered as a Rich Panel for reliable background."""
+
+    def __init__(self, title: str, pane_id: str = "", **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.title = title
+        self.pane_id = pane_id
+
+    def render(self) -> Panel:
+        width = self.size.width or 80
+        text = Text()
+        text.append(" ")
+        text.append(self.title, style="bold")
+        text.append(" " * max(0, width - len(self.title) - 4))
+        text.append("[x]", style="bold red")
+        return Panel(text, style="bold cyan on #1a1a40", box=box.SIMPLE, height=1, padding=(0, 0))
+
+    def on_click(self, event):
+        """Click on [x] closes pane."""
+        x = event.x
+        width = self.size.width or 80
+        if x >= width - 3:
+            self.post_message(ClosePaneRequest(self.pane_id))
 
 
 class Pane(Widget):
@@ -26,31 +53,6 @@ class Pane(Widget):
 
     .title-bar {
         height: 1;
-        layout: horizontal;
-        background: #22d3ee;
-    }
-
-    .title-bar Static {
-        width: 1fr;
-        height: 1;
-        background: #22d3ee;
-        color: #000000;
-        text-style: bold;
-        padding-left: 1;
-    }
-
-    .title-bar Button {
-        width: auto;
-        height: 1;
-        background: #22d3ee;
-        color: #000000;
-        border: none;
-        padding: 0 1;
-    }
-
-    .title-bar Button:hover {
-        background: #ff5555;
-        color: #ffffff;
     }
 
     #content {
@@ -66,12 +68,10 @@ class Pane(Widget):
         self.content_widget = content
 
     def compose(self) -> ComposeResult:
-        with Horizontal(classes="title-bar"):
-            yield Static(f"{self.title}")
-            yield Button("[x]")
+        yield PaneTitleBar(self.title, self.pane_id, classes="title-bar")
         self.content_widget.add_class("pane-content")
         yield self.content_widget
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Close button sends request to parent app."""
-        self.post_message(ClosePaneRequest(self.pane_id))
+    def on_close_pane_request(self, message: ClosePaneRequest) -> None:
+        if message.pane_id == self.pane_id:
+            self.remove()
