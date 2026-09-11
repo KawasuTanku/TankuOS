@@ -52,7 +52,7 @@ class AppMenuScreen(ModalScreen):
     }
 
     #app-menu {
-        width: 40;
+        width: 24;
         height: auto;
         background: $surface;
         border: solid $primary;
@@ -67,6 +67,7 @@ class AppMenuScreen(ModalScreen):
         border: none;
         margin: 0;
         padding: 0 1;
+        text-align: left;
     }
 
     #app-menu Button:focus {
