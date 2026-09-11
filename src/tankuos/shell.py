@@ -11,7 +11,6 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Static, Button, Input, Label
 from textual.css.query import NoMatches
 from textual.binding import Binding
-from textual import work
 
 from tankuos.theme import theme, TankuHeader
 from tankuos.pane import Pane
@@ -28,19 +27,18 @@ APP_ICONS = {
 }
 
 
-class AppMenuItem(Button):
-    """A single app entry in the dropdown menu."""
+class AppMenuItem(Static):
+    """A single item in the dropdown app menu."""
 
-    def __init__(self, name: str, icon: str = "", **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, name: str = "", icon: str = "", **kwargs):
         self.app_name = name
-        self.icon = icon or APP_ICONS.get("default", "󰲌")
+        self.icon = icon
+        super().__init__(f"  {icon} {name}", **kwargs)
+        self.add_class("dropdown-item")
 
-    def render(self):
-        p = theme.palette
-        if self.has_focus:
-            return f"[{p.bg_surface} {p.accent_primary}] {self.icon}  {self.app_name}[/]"
-        return f"[{p.text_primary}] {self.icon}  {self.app_name}[/]"
+    def render(self) -> str:
+        """Render the menu item with proper styling."""
+        return f"  {self.icon} {self.app_name}"
 
 
 class AppDropdown(Vertical):
@@ -55,36 +53,22 @@ class AppDropdown(Vertical):
 
     def compose(self) -> ComposeResult:
         """Compose the dropdown button + menu items."""
-        yield Button(
-            label="TankuOS ▾",
-            id="dropdown-toggle",
-            classes="dropdown-toggle",
-        )
-        # Stub menu items for visualization
-        yield AppMenuItem(name="Shell", icon="", classes="dropdown-item")
-        yield AppMenuItem(name="Retirement", icon="󰃖", classes="dropdown-item")
-        yield AppMenuItem(name="Monster", icon="󰍵", classes="dropdown-item")
-        yield AppMenuItem(name="MontcoMonitor", icon="󰜟", classes="dropdown-item")
-        yield AppMenuItem(name="Glances", icon="󰄩", classes="dropdown-item")
+        yield Button("TankuOS ▾", id="dropdown-toggle", classes="dropdown-toggle")
+        for name, icon in self.apps.items():
+            item = AppMenuItem(app_name=name, icon=icon)
+            item.styles.display = "none"
+            yield item
+
+    def on_mount(self) -> None:
+        """Items are hidden at compose time via styles.display."""
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Toggle dropdown on toggle button press."""
         if event.button.id == "dropdown-toggle":
             self.expanded = not self.expanded
             for item in self.query(".dropdown-item"):
-                item.display = self.expanded
-
-    def on_key(self, event) -> None:
-        """Handle arrow keys for navigation."""
-        if not self.expanded:
-            return
-        items = list(self.query(".dropdown-item"))
-        if event.key == "down":
-            self.selected = (self.selected + 1) % len(items)
-            items[self.selected].focus()
-        elif event.key == "up":
-            self.selected = (self.selected - 1) % len(items)
-            items[self.selected].focus()
+                item.styles.display = "block" if self.expanded else "none"
+            self.refresh()
 
 
 class Shell(App):
@@ -96,7 +80,7 @@ class Shell(App):
     }
 
     #topbar {
-        height: 1;
+        height: auto;
         background: $primary;
     }
 
@@ -105,6 +89,16 @@ class Shell(App):
         padding-left: 1;
         color: $accent;
         text-style: bold;
+    }
+
+    #tb_center {
+        width: 1fr;
+        text-align: center;
+    }
+
+    #tb_right {
+        width: auto;
+        padding-right: 1;
     }
 
     #dropdown-toggle {
@@ -121,7 +115,6 @@ class Shell(App):
     }
 
     .dropdown-item {
-        display: none;
         background: $surface;
         border: solid $primary;
         min-width: 20;
@@ -135,16 +128,6 @@ class Shell(App):
 
     .dropdown-item:hover {
         background: $primary;
-    }
-
-    #tb_center {
-        width: 1fr;
-        text-align: center;
-    }
-
-    #tb_right {
-        width: auto;
-        padding-right: 1;
     }
 
     #main-area {
@@ -188,23 +171,6 @@ class Shell(App):
 
     .pane:focus-within {
         border: solid $accent;
-    }
-
-    .dropdown-item {
-        display: none;
-        background: $surface;
-        border: solid $primary;
-        min-width: 20;
-        height: 1;
-    }
-
-    .dropdown-item:focus {
-        background: $primary;
-        border: solid $accent;
-    }
-
-    .dropdown-item:hover {
-        background: $primary;
     }
     """
 
@@ -271,10 +237,16 @@ class Shell(App):
 
     def action_toggle_launcher(self) -> None:
         """Toggle the app dropdown."""
-        self.dropdown_expanded = not self.dropdown_expanded
-        # Show/hide dropdown items
-        for item in self.query(".dropdown-item"):
-            item.display = self.dropdown_expanded
+        try:
+            dropdown = self.query_one("#tb_left", AppDropdown)
+            dropdown.expanded = not dropdown.expanded
+            for item in dropdown.query(".dropdown-item"):
+                if dropdown.expanded:
+                    item.styles.display = "block"
+                else:
+                    item.styles.display = "none"
+        except NoMatches:
+            pass
 
     def action_help(self) -> None:
         """Show help."""
