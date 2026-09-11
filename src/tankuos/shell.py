@@ -132,13 +132,9 @@ class Shell(App):
     }
 
     #dropdown-menu {
-        position: absolute;
-        top: 1;
-        left: 1;
         display: none;
-        width: auto;
-        height: auto;
     }
+
 
     #pane-grid {
         layout: grid;
