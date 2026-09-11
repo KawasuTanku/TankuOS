@@ -5,7 +5,8 @@ import threading
 from typing import Optional
 
 from textual.widget import Widget
-from textual.widgets import Static
+from textual.widgets import Static, Button
+from textual.containers import Horizontal, Vertical
 from textual.message import Message
 
 from tankuos.theme import theme
@@ -17,7 +18,6 @@ _ANSI_RE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b\[[\?0-9]*[
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape sequences and process backspaces."""
     text = _ANSI_RE.sub('', text)
-    # Process backspace: delete preceding character
     result = []
     for char in text:
         if char == '\x08':
@@ -186,25 +186,59 @@ class Pane(Widget):
             pass
 
 
-class PaneTitleBar(Static):
-    """Title bar for a pane."""
+class PaneTitleBar(Widget):
+    """Title bar for a pane — title + close button."""
 
     focused: bool = False
+
+    CSS = """
+    PaneTitleBar {
+        height: 1;
+        layout: horizontal;
+        padding: 0;
+    }
+
+    .title-text {
+        width: 1fr;
+        height: 1;
+    }
+
+    .close-btn {
+        width: auto;
+        height: 1;
+        border: none;
+        background: $primary;
+        color: $accent;
+        padding: 0 1;
+    }
+
+    .close-btn:focus {
+        background: $error;
+        color: $surface;
+    }
+
+    .close-btn:hover {
+        background: $error;
+        color: $surface;
+    }
+    """
 
     def __init__(self, title: str = "", pane_id: str = "", **kwargs) -> None:
         super().__init__(**kwargs)
         self.title = title
         self.pane_id = pane_id
-        self.add_class("pane-title")
 
-    def render(self):
-        p = theme.palette
-        border = p.border_focus if self.focused else p.border_primary
-        return (
-            f"[{border}]┌─[/{border}]"
-            f"[{p.accent_primary}] {self.title} [/{p.accent_primary}]"
-            f"[{border}]{'─' * max(0, self.size.width - len(self.title) - 6)}┐[/{border}]"
-        )
+    def compose(self):
+        yield Static(self.title, classes="title-text", id=f"ttl-{self.pane_id}")
+        yield Button("[x]", classes="close-btn", id=f"close-{self.pane_id}")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Close button kills process and removes pane."""
+        if event.button.id == f"close-{self.pane_id}":
+            pane = self.parent
+            if pane:
+                pane.kill()
+                pane.remove()
 
 
 class PaneContent(Static):
