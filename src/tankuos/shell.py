@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Static, Button, Label
+from textual.widgets import Static, Button
 from textual.binding import Binding
 from textual.screen import ModalScreen
 
@@ -43,11 +43,12 @@ class AppMenuScreen(ModalScreen):
 
     #app-menu Button {
         width: auto;
+        content-align: left middle;
         height: 1;
         background: $surface;
         border: none;
         text-style: bold;
-        padding: 0 1;
+        padding: 0;
     }
 
     #app-menu Button:focus {
@@ -66,9 +67,9 @@ class AppMenuScreen(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="app-menu"):
-            yield Label("Select Application")
+            yield Static("Select Application")
             for name, info in APPS.items():
-                yield Button(f" {info['icon']} {name}", id=name)
+                yield Button(f"{info['icon']} {name}", id=name)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Return selected app name."""
@@ -90,7 +91,7 @@ class Shell(App):
     #menubar {
         height: 1;
         background: $primary;
-        padding: 0 1;
+        padding: 0;
     }
 
     #menubar Button {
@@ -99,9 +100,9 @@ class Shell(App):
         border: none;
         height: 1;
         min-width: 6;
-        padding: 0 1;
+        padding: 0;
         text-style: bold;
-        padding: 0 1;
+        padding: 0;
     }
 
     #menubar Button:focus {
@@ -124,11 +125,12 @@ class Shell(App):
     #statusbar {
         height: 1;
         background: $secondary;
-        padding: 0 1;
+        padding: 0;
     }
 
     #statusbar Static {
         width: auto;
+        content-align: left middle;
         color: $accent;
     }
     """
