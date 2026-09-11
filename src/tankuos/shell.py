@@ -55,10 +55,6 @@ class AppMenuScreen(ModalScreen):
         color: $surface;
     }
 
-    #app-menu Button:hover {
-        background: $accent;
-        color: $surface;
-    }
     """
 
     def __init__(self, **kwargs):
