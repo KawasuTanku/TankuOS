@@ -12,6 +12,7 @@ from textual.widgets import Static, Button, Input, Label
 from textual.css.query import NoMatches
 from textual.binding import Binding
 from textual.widget import Widget
+from textual.screen import ModalScreen
 
 from tankuos.theme import theme, TankuHeader
 from tankuos.pane import Pane
@@ -29,7 +30,7 @@ APP_ICONS = {
 
 
 class AppMenuItem(Static):
-    """A single item in the dropdown app menu."""
+    """A single item in the dropdown app menu (kept for backward compat)."""
 
     def __init__(self, name: str = "", icon: str = "", **kwargs):
         self.app_name = name
@@ -40,6 +41,55 @@ class AppMenuItem(Static):
     def render(self) -> str:
         """Render the menu item with proper styling."""
         return f"  {self.icon} {self.app_name}"
+
+
+class AppMenuScreen(ModalScreen):
+    """Modal overlay showing the app menu."""
+
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+
+    #app-menu {
+        width: 40;
+        height: auto;
+        background: $surface;
+        border: solid $primary;
+        padding: 1;
+    }
+
+    #app-menu Button {
+        width: 100%;
+        height: 1;
+        background: $surface;
+        border: none;
+        margin: 0;
+        padding: 0 1;
+    }
+
+    #app-menu Button:focus {
+        background: $primary;
+        border: solid $accent;
+    }
+
+    #app-menu Button:hover {
+        background: $primary;
+    }
+    """
+
+    def __init__(self, apps: Dict[str, str] | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.apps = apps or {}
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="app-menu"):
+            for name, icon in self.apps.items():
+                yield Button(f"  {icon}  {name}", id=name, classes="menu-item")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Return the selected app name."""
+        self.dismiss(event.button.id)
 
 
 class AppDropdown(Widget):
@@ -57,10 +107,15 @@ class AppDropdown(Widget):
         yield Button("TankuOS ▾", id="dropdown-toggle", classes="dropdown-toggle")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Toggle dropdown on toggle button press."""
+        """Open the modal app menu on toggle button press."""
         if event.button.id == "dropdown-toggle":
-            self.expanded = not self.expanded
-            self.app.action_toggle_launcher()
+            self.app.push_screen(AppMenuScreen(apps=self.apps), self._on_menu_result)
+
+    def _on_menu_result(self, app_name: Optional[str]) -> None:
+        """Handle the result from the modal menu."""
+        if app_name:
+            # TODO: Launch the selected app
+            self.app.notify(f"Selected: {app_name}")
 
 
 class Shell(App):
@@ -74,10 +129,6 @@ class Shell(App):
     #topbar {
         height: 1;
         background: $primary;
-    }
-
-    #dropdown-menu {
-        offset: 1 0;
     }
 
     #tb_left {
@@ -126,6 +177,10 @@ class Shell(App):
         background: $primary;
     }
 
+    #main-area {
+        layout: vertical;
+        height: 1fr;
+    }
 
     #pane-grid {
         layout: grid;
@@ -228,21 +283,13 @@ class Shell(App):
         theme.set_palette(self.theme_name)
 
     def action_toggle_launcher(self) -> None:
-        """Toggle the app dropdown."""
-        try:
-            menu = self.query_one("#dropdown-menu")
-            # Menu exists - remove it
-            menu.remove()
-            self.dropdown_expanded = False
-        except NoMatches:
-            # Menu doesn't exist - mount it inside main-area (before pane-grid)
-            # so it shrinks the pane-grid instead of pushing the bottombar
-            main_area = self.query_one("#main-area")
-            menu = Container(id="dropdown-menu")
-            main_area.mount(menu, before=0)  # before pane-grid
-            for name, icon in self.apps.items():
-                menu.mount(AppMenuItem(name=name, icon=icon))
-            self.dropdown_expanded = True
+        """Open the modal app menu."""
+        self.push_screen(AppMenuScreen(apps=self.apps), self._on_menu_result)
+
+    def _on_menu_result(self, app_name: Optional[str]) -> None:
+        """Handle the result from the modal menu."""
+        if app_name:
+            self.notify(f"Selected: {app_name}")
 
     def action_help(self) -> None:
         """Show help."""
