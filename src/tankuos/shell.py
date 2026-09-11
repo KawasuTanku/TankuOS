@@ -46,6 +46,7 @@ class AppMenuScreen(ModalScreen):
         height: 1;
         background: $surface;
         border: none;
+        content-align: left middle;
         text-style: bold;
     }
 
@@ -96,6 +97,7 @@ class Shell(App):
         background: $primary;
         color: $accent;
         border: none;
+        content-align: left middle;
         height: 1;
         min-width: 6;
         padding: 0 1;
