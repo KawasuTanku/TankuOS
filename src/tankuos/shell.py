@@ -6,7 +6,7 @@ Clean step 2: app menu via ModalScreen.
 from typing import Dict, List, Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Horizontal
 from textual.widgets import Static, Button
 from textual.binding import Binding
 from textual.screen import ModalScreen
@@ -50,7 +50,7 @@ class AppMenuScreen(ModalScreen):
         height: auto;
         background: $surface;
         border: solid $accent;
-        offset: 18 1;
+        offset: 22 1;
     }
 
     #app-menu Button {
@@ -83,7 +83,7 @@ class AppMenuScreen(ModalScreen):
             button.has_focus = False
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="app-menu"):
+        with Container(id="app-menu"):
             for name in ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]:
                 yield Button(name, id=name)
 
@@ -176,8 +176,7 @@ class Shell(App):
     def compose(self) -> ComposeResult:
         with Container(id="desktop"):
             with Horizontal(id="menubar"):
-                yield Button("File", id="menu-file")
-                yield Button("Edit", id="menu-edit")
+                yield Button("TankuOS", id="menu-file")
                 yield Button("View", id="menu-view")
                 yield Button("Apps", id="menu-apps")
                 yield Button("Help", id="menu-help")
