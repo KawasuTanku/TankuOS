@@ -126,7 +126,7 @@ class TankuHeader(Widget):
 
     def render(self):
         p = theme.palette
-        return f"[{p.accent_primary}]{self.title}[/]  [{p.text_secondary}]TankuOS Desktop[/]"
+        return f"[{p.accent_primary}]{self.title}[/]"
 
 
 class TankuFooter(Widget):
@@ -138,7 +138,12 @@ class TankuFooter(Widget):
 
     def render(self):
         p = theme.palette
-        return f"[{p.bg_surface}]  [{p.accent_primary}]●[/] [{p.text_primary}]{self.status}[/]  [{p.text_secondary}]F1 Help  F2 Theme  F3 Launcher[/]  [{p.accent_success}]●[/][{p.text_secondary}] System OK[/]  [{p.bg_surface}]"
+        return (
+            f"[{p.accent_primary}]●[/{p.accent_primary}] "
+            f"[{p.text_primary}]{self.status}[/{p.text_primary}]  "
+            f"[{p.text_secondary}]F1 Help  F2 Theme  F3 Apps[/{p.text_secondary}]  "
+            f"[{p.accent_success}]●[/{p.accent_success}][{p.text_secondary}] OK[/{p.text_secondary}]"
+        )
 
 
 class TankuPane(Widget):

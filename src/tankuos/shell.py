@@ -92,7 +92,7 @@ class Shell(App):
     }
 
     #header {
-        height: 3;
+        height: 1;
         border-bottom: solid #1e293b;
         background: #0f1420;
         layout: horizontal;
@@ -126,7 +126,7 @@ class Shell(App):
     }
 
     #status-bar {
-        height: 3;
+        height: 1;
         border-top: solid #1e293b;
         background: #0f1420;
     }
@@ -145,6 +145,7 @@ class Shell(App):
         border: solid #1e293b;
         color: #22d3ee;
         min-width: 12;
+        height: 1;
     }
 
     .dropdown-toggle:focus {
@@ -156,6 +157,7 @@ class Shell(App):
         background: #141b2d;
         border: solid #1e293b;
         min-width: 20;
+        height: 1;
     }
 
     .dropdown-item:focus {
