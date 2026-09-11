@@ -36,6 +36,7 @@ class Pane(Widget):
     """A TankuOS pane hosting a child process in a PTY."""
 
     has_focus: bool = False
+    can_focus: bool = True
 
     def __init__(
         self,
