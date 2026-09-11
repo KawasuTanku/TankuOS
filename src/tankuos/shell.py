@@ -1,6 +1,6 @@
 """Core shell — TankuOS retro desktop.
 
-Step 2: App menu via ModalScreen.
+Step 3: App menu launches real shell pane.
 """
 
 from typing import Dict, Optional
@@ -37,7 +37,7 @@ class AppMenuItem:
 
 
 class AppMenuScreen(ModalScreen):
-    """App selection modal — Static items for left alignment."""
+    """App selection modal."""
 
     CSS = """
     Screen {
@@ -80,13 +80,11 @@ class AppMenuScreen(ModalScreen):
         if event.key == "escape":
             self.dismiss(None)
         elif event.key == "enter":
-            # Get focused item and dismiss with its id
             focused = self.focused
             if focused and hasattr(focused, 'id'):
                 self.dismiss(focused.id)
 
     def on_click(self, event) -> None:
-        # Click on a Static row
         widget = event.widget
         if widget is self:
             self.dismiss(None)
@@ -150,6 +148,15 @@ class Shell(App):
         width: 20;
         color: $accent;
     }
+
+    .pane {
+        border: solid $primary;
+        margin: 0;
+    }
+
+    .pane:focus-within {
+        border: solid $accent;
+    }
     """
 
     BINDINGS = [
@@ -174,9 +181,10 @@ class Shell(App):
                 yield Button("Apps", id="menu-apps")
                 yield Button("Help", id="menu-help")
 
+            # Empty workspace — panes added from app menu
             with Container(id="workspace"):
                 with Container(id="pane-grid"):
-                    yield Static("Pane content here", id="pane-main")
+                    pass
 
             with Horizontal(id="statusbar"):
                 yield Static(" F1 Help")
@@ -222,7 +230,25 @@ class Shell(App):
     def _on_app_selected(self, app_name: Optional[str]) -> None:
         self._clear_active_menu()
         if app_name:
-            self.notify(f"Selected: {app_name}")
+            self._launch_app(app_name)
+
+    def _launch_app(self, app_name: str) -> None:
+        """Launch an application in a new pane."""
+        # Remove placeholder if present
+        placeholder = self.query_one("#pane-grid", Container)
+        for child in list(placeholder.children):
+            child.remove()
+
+        # Create real pane
+        pane = Pane(
+            title=app_name,
+            command="/bin/bash",
+            pane_id=f"pane-{app_name.lower()}",
+            classes="pane",
+        )
+        self.panes[pane.pane_id] = pane
+        placeholder.mount(pane)
+        self.notify(f"Launched: {app_name}")
 
     def action_help(self) -> None:
         self.notify("TankuOS — Retro Desktop | F2: Theme | F3: Apps | Q: Quit")

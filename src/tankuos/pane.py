@@ -4,16 +4,12 @@ Spawns a process, reads its output, renders to a TankuOS pane,
 and forwards keyboard input.
 """
 
-import os
 import threading
-import time
 from typing import Optional
 
 from textual.widget import Widget
 from textual.widgets import Static
 from textual.message import Message
-from textual.geometry import Size
-from ptyprocess import PtyProcessUnicode
 
 from tankuos.theme import theme
 
@@ -28,11 +24,7 @@ class PaneOutput(Message):
 
 
 class Pane(Widget):
-    """A TankuOS pane hosting a child process in a PTY.
-
-    Each pane runs a single process. Output is captured and rendered.
-    Keyboard input is forwarded to the process.
-    """
+    """A TankuOS pane hosting a child process in a PTY."""
 
     has_focus: bool = False
 
@@ -47,7 +39,7 @@ class Pane(Widget):
         self.title = title
         self.command = command
         self.pane_id = pane_id or f"pane-{id(self)}"
-        self._process: Optional[PtyProcessUnicode] = None
+        self._process = None
         self._output_lines: list[str] = []
         self._reader_thread: Optional[threading.Thread] = None
         self._running = False
@@ -75,6 +67,7 @@ class Pane(Widget):
     def _start_process(self) -> None:
         """Spawn the child process in a PTY."""
         try:
+            from ptyprocess import PtyProcessUnicode
             self._process = PtyProcessUnicode.spawn(
                 [self.command] if isinstance(self.command, str) else self.command,
                 dimensions=(24, 80),
@@ -95,14 +88,10 @@ class Pane(Widget):
                 if data:
                     with self._lock:
                         self._output_lines.append(data)
-                        # Keep only last 1000 lines
                         if len(self._output_lines) > 1000:
                             self._output_lines = self._output_lines[-1000:]
-                    # Notify the UI
                     self.post_message(PaneOutput(self.pane_id, data))
-            except EOFError:
-                break
-            except OSError:
+            except (EOFError, OSError):
                 break
             except Exception:
                 break
@@ -138,7 +127,7 @@ class Pane(Widget):
             try:
                 content = self.query_one(f"#content-{self.pane_id}", PaneContent)
                 with self._lock:
-                    content.content = "".join(self._output_lines)
+                    content.update("".join(self._output_lines))
                 content.scroll_end()
             except Exception:
                 pass
@@ -147,7 +136,6 @@ class Pane(Widget):
         """Forward key events to the PTY."""
         if not self.has_focus:
             return
-        # Forward the key to the child process
         self.write_input(event.key)
 
     def on_focus(self) -> None:
@@ -191,18 +179,12 @@ class PaneTitleBar(Static):
 class PaneContent(Static):
     """Content area of a pane — displays process output."""
 
-    content: str = ""
-
     def __init__(self, pane_id: str = "", **kwargs) -> None:
         super().__init__(**kwargs)
         self.pane_id = pane_id
         self.add_class("pane-content")
 
-    def watch_content(self, new_value: str) -> None:
-        """Refresh when output changes."""
-        self.update(new_value)
-        self.refresh()
-
     def render(self):
         p = theme.palette
-        return self.content or f"[{p.text_secondary}]...[/{p.text_secondary}]"
+        text = self.content or f"[{p.text_secondary}]...[/{p.text_secondary}]"
+        return text
