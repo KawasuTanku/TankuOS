@@ -3,11 +3,11 @@
 Clean step 2: app menu via ModalScreen.
 """
 
-from typing import Dict, Optional
+from typing import Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Static, Button
+from textual.containers import Container, Horizontal
+from textual.widgets import Static, Button, Label, ListView, ListItem
 from textual.binding import Binding
 from textual.screen import ModalScreen
 
@@ -16,11 +16,11 @@ from tankuos.theme import theme
 
 # App registry
 APPS = {
-    "Shell": {"icon": "", "description": "Terminal shell"},
-    "Retirement": {"icon": "󰃖", "description": "IRA portfolio tracker"},
-    "Monster": {"icon": "󰍵", "description": "Energy drink P&L"},
-    "MontcoMonitor": {"icon": "󰜟", "description": "VoIP monitor"},
-    "Glances": {"icon": "󰄩", "description": "System monitor"},
+    "Shell": "Terminal shell",
+    "Retirement": "IRA portfolio tracker",
+    "Monster": "Energy drink P&L",
+    "MontcoMonitor": "VoIP monitor",
+    "Glances": "System monitor",
 }
 
 
@@ -37,29 +37,24 @@ class AppMenuScreen(ModalScreen):
         height: auto;
         background: $surface;
         border: solid $accent;
-        padding: 0 1;
-        margin: 0;
         offset: 18 1;
-        align: left top;
     }
 
-    #app-menu Button {
-        width: 100%;
-        content-align: left middle;
+    #app-menu ListView {
+        height: auto;
+    }
+
+    #app-menu ListItem {
         height: 1;
-        background: $surface;
-        border: none;
-        text-style: bold;
         padding: 0 1;
-        margin: 0;
     }
 
-    #app-menu Button:focus {
+    #app-menu ListItem:focus {
         background: $accent;
         color: $surface;
     }
 
-    #app-menu Button:hover {
+    #app-menu ListItem:hover {
         background: $accent;
         color: $surface;
     }
@@ -69,14 +64,12 @@ class AppMenuScreen(ModalScreen):
         super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="app-menu"):
-            yield Static("Select Application")
-            for name, info in APPS.items():
-                yield Button(name, id=name)
+        items = [ListItem(Label(name), id=name) for name in APPS]
+        yield ListView(*items, id="app-menu")
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    def on_list_item_selected(self, event: ListView.Selected) -> None:
         """Return selected app name."""
-        self.dismiss(event.button.id)
+        self.dismiss(event.item.id)
 
     def on_key(self, event) -> None:
         if event.key == "escape":
@@ -95,7 +88,6 @@ class Shell(App):
         height: 1;
         background: $primary;
         padding: 0 1;
-        margin: 0;
     }
 
     #menubar Button {
@@ -105,10 +97,7 @@ class Shell(App):
         height: 1;
         min-width: 6;
         padding: 0 1;
-        margin: 0;
         text-style: bold;
-        padding: 0 1;
-        margin: 0;
     }
 
     #menubar Button:focus {
@@ -118,28 +107,24 @@ class Shell(App):
 
     #workspace {
         height: 1fr;
-        padding: 0 1;
-        margin: 0;
+        padding: 1;
     }
 
     #pane-grid {
         layout: grid;
         grid-size: 2 2;
         height: 1fr;
-        padding: 0 1;
-        margin: 0;
+        padding: 0;
     }
 
     #statusbar {
         height: 1;
         background: $secondary;
         padding: 0 1;
-        margin: 0;
     }
 
     #statusbar Static {
-        width: 100%;
-        content-align: left middle;
+        width: auto;
         color: $accent;
     }
     """
