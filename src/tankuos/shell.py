@@ -43,6 +43,50 @@ class AppMenuItem(Button):
         return f"[{p.text_primary}] {self.icon}  {self.app_name}[/]"
 
 
+class AppDropdown(Vertical):
+    """Dropdown application menu."""
+
+    expanded: bool = False
+
+    def __init__(self, apps: Dict[str, str] | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.apps = apps or {}
+        self.selected = 0
+
+    def compose(self) -> ComposeResult:
+        """Compose the dropdown button + menu items."""
+        yield Button(
+            label="TankuOS ▾",
+            id="dropdown-toggle",
+            classes="dropdown-toggle",
+        )
+        # Stub menu items for visualization
+        yield AppMenuItem(name="Shell", icon="", classes="dropdown-item")
+        yield AppMenuItem(name="Retirement", icon="󰃖", classes="dropdown-item")
+        yield AppMenuItem(name="Monster", icon="󰍵", classes="dropdown-item")
+        yield AppMenuItem(name="MontcoMonitor", icon="󰜟", classes="dropdown-item")
+        yield AppMenuItem(name="Glances", icon="󰄩", classes="dropdown-item")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Toggle dropdown on toggle button press."""
+        if event.button.id == "dropdown-toggle":
+            self.expanded = not self.expanded
+            for item in self.query(".dropdown-item"):
+                item.display = self.expanded
+
+    def on_key(self, event) -> None:
+        """Handle arrow keys for navigation."""
+        if not self.expanded:
+            return
+        items = list(self.query(".dropdown-item"))
+        if event.key == "down":
+            self.selected = (self.selected + 1) % len(items)
+            items[self.selected].focus()
+        elif event.key == "up":
+            self.selected = (self.selected - 1) % len(items)
+            items[self.selected].focus()
+
+
 class Shell(App):
     """The TankuOS desktop shell."""
 
@@ -61,6 +105,36 @@ class Shell(App):
         padding-left: 1;
         color: $accent;
         text-style: bold;
+    }
+
+    #dropdown-toggle {
+        background: $primary;
+        color: $accent;
+        min-width: 12;
+        height: 1;
+        border: none;
+        padding: 0;
+    }
+
+    #dropdown-toggle:focus {
+        border: none;
+    }
+
+    .dropdown-item {
+        display: none;
+        background: $surface;
+        border: solid $primary;
+        min-width: 20;
+        height: 1;
+    }
+
+    .dropdown-item:focus {
+        background: $primary;
+        border: solid $accent;
+    }
+
+    .dropdown-item:hover {
+        background: $primary;
     }
 
     #tb_center {
@@ -128,6 +202,10 @@ class Shell(App):
         background: $primary;
         border: solid $accent;
     }
+
+    .dropdown-item:hover {
+        background: $primary;
+    }
     """
 
     BINDINGS = [
@@ -156,7 +234,7 @@ class Shell(App):
         with Container(id="desktop"):
             # Top bar — WarpStrand-Client style
             with Horizontal(id="topbar"):
-                yield Static("TankuOS ▾", id="tb_left")
+                yield AppDropdown(apps=self.apps, id="tb_left")
                 yield Static("", id="tb_center")
                 yield Static("CPU --%  MEM --%", id="tb_right")
 
