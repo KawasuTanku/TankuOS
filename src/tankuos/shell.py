@@ -3,7 +3,7 @@
 Clean step 2: app menu via ModalScreen.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
@@ -14,7 +14,8 @@ from textual.screen import ModalScreen
 from tankuos.theme import theme
 from tankuos.pane import Pane
 
-APP_ICONS = {
+
+APP_ICONS: Dict[str, str] = {
     "Shell": "\\ue795",
     "Retirement": "\\U000f00d6",
     "Monster": "\\U000f0375",
@@ -23,24 +24,22 @@ APP_ICONS = {
     "default": "\\U000f0b0c",
 }
 
-class AppMenuItem:
-    """Compat stub — kept for backward compat with tests."""
 
-    def __init__(self, name: str = "", icon: str = "", **kwargs):
+class AppMenuItem:
+    """Compat stub for tests."""
+
+    def __init__(self, name: str = "", icon: str = "", **kwargs) -> None:
         self.app_name = name
         self.icon = icon
 
     def render(self) -> str:
         return f"  {self.icon} {self.app_name}"
 
+
 class AppMenuScreen(ModalScreen):
     """App selection modal."""
 
     CSS = """
-    Screen {
-        align: left top;
-    }
-
     #app-menu {
         width: auto;
         height: auto;
@@ -48,28 +47,9 @@ class AppMenuScreen(ModalScreen):
         border: solid $accent;
         offset: 22 1;
     }
-
-    #app-menu Button {
-        width: auto;
-        height: 1;
-        background: $surface;
-        border: none;
-        text-style: bold;
-        padding: 0 1;
-    }
-
-    #app-menu Button:hover {
-        background: $accent;
-        color: $surface;
-    }
-
-    #app-menu Button:focus {
-        background: $accent;
-        color: $surface;
-    }
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
     def on_mount(self) -> None:
@@ -80,10 +60,9 @@ class AppMenuScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with Container(id="app-menu"):
             for name in ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]:
-                yield Button(name, id=name)
+                yield Button(name, id=name, classes="menu-item")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Return selected app name."""
         self.dismiss(event.button.id)
 
     def on_key(self, event) -> None:
@@ -91,9 +70,9 @@ class AppMenuScreen(ModalScreen):
             self.dismiss(None)
 
     def on_click(self, event) -> None:
-        """Click outside menu dismisses."""
         if event.widget is self:
             self.dismiss(None)
+
 
 class Shell(App):
     """TankuOS desktop shell."""
@@ -151,6 +130,26 @@ class Shell(App):
         width: auto;
         color: $accent;
     }
+
+    .menu-item {
+        width: auto;
+        height: 1;
+        background: $surface;
+        border: none;
+        text-style: bold;
+        padding: 0 1;
+        text-align: left;
+    }
+
+    .menu-item:focus {
+        background: $accent;
+        color: $surface;
+    }
+
+    .menu-item:hover {
+        background: $accent;
+        color: $surface;
+    }
     """
 
     BINDINGS = [
@@ -160,7 +159,7 @@ class Shell(App):
         Binding("q", "quit", "Quit"),
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.theme_name = "turbopascal"
         self._menu_button = None
@@ -191,10 +190,8 @@ class Shell(App):
         theme.set_palette(self.theme_name)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        # Clear any active button
         self._clear_active_menu()
         if event.button.id == "menu-apps":
-            # Mark this button as active
             event.button.add_class("active")
             self._menu_button = event.button
             self.action_toggle_apps()
@@ -202,13 +199,12 @@ class Shell(App):
             event.button.add_class("active")
             self._menu_button = event.button
             self.action_help()
-        elif event.button.id in ["menu-file", "menu-edit", "menu-view"]:
+        elif event.button.id in ["menu-file", "menu-view"]:
             event.button.add_class("active")
             self._menu_button = event.button
             self.notify(f"{event.button.id} (not yet)")
 
     def _clear_active_menu(self) -> None:
-        """Remove active class from menu button."""
         if self._menu_button:
             self._menu_button.remove_class("active")
             self._menu_button = None
@@ -224,7 +220,6 @@ class Shell(App):
         self.push_screen(AppMenuScreen(), self._on_app_selected)
 
     def _on_app_selected(self, app_name: Optional[str]) -> None:
-        """Handle app selection and clear menu highlight."""
         self._clear_active_menu()
         if app_name:
             self.notify(f"Selected: {app_name}")
@@ -237,20 +232,17 @@ class Shell(App):
         self.exit()
 
     def add_pane(self, title: str, command: str, pane_id: str = "") -> Pane:
-        """Add a new pane to the desktop."""
         pane_id = pane_id or f"pane-{len(self.panes)}"
         pane = Pane(title=title, command=command, pane_id=pane_id, classes="pane")
         self.panes[pane_id] = pane
         return pane
 
     def remove_pane(self, pane_id: str) -> None:
-        """Remove a pane from the desktop."""
         if pane_id in self.panes:
             self.panes[pane_id].kill()
             del self.panes[pane_id]
 
     def focus_pane(self, pane_id: str) -> None:
-        """Focus a specific pane."""
         if pane_id in self.panes:
             if self.active_pane_id and self.active_pane_id in self.panes:
                 self.panes[self.active_pane_id].has_focus = False
@@ -258,9 +250,11 @@ class Shell(App):
             self.panes[pane_id].has_focus = True
             self.panes[pane_id].focus()
 
-def main():
+
+def main() -> None:
     shell = Shell()
     shell.run()
+
 
 if __name__ == "__main__":
     main()
