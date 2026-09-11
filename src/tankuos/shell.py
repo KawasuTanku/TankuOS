@@ -37,7 +37,8 @@ class AppMenuScreen(ModalScreen):
         height: auto;
         background: $surface;
         border: solid $accent;
-        padding: 1;
+        padding: 0 1;
+        margin: 0;
         offset: 18 1;
     }
 
@@ -48,7 +49,8 @@ class AppMenuScreen(ModalScreen):
         background: $surface;
         border: none;
         text-style: bold;
-        padding: 0;
+        padding: 0 1;
+        margin: 0;
     }
 
     #app-menu Button:focus {
@@ -91,7 +93,8 @@ class Shell(App):
     #menubar {
         height: 1;
         background: $primary;
-        padding: 0;
+        padding: 0 1;
+        margin: 0;
     }
 
     #menubar Button {
@@ -100,9 +103,11 @@ class Shell(App):
         border: none;
         height: 1;
         min-width: 6;
-        padding: 0;
+        padding: 0 1;
+        margin: 0;
         text-style: bold;
-        padding: 0;
+        padding: 0 1;
+        margin: 0;
     }
 
     #menubar Button:focus {
@@ -112,20 +117,23 @@ class Shell(App):
 
     #workspace {
         height: 1fr;
-        padding: 1;
+        padding: 0 1;
+        margin: 0;
     }
 
     #pane-grid {
         layout: grid;
         grid-size: 2 2;
         height: 1fr;
-        padding: 0;
+        padding: 0 1;
+        margin: 0;
     }
 
     #statusbar {
         height: 1;
         background: $secondary;
-        padding: 0;
+        padding: 0 1;
+        margin: 0;
     }
 
     #statusbar Static {
