@@ -21,7 +21,8 @@ class Pane(Widget):
     Pane {
         layout: vertical;
         height: 1fr;
-        border: solid #22d3ee;
+        border: solid #ffffff;
+        padding: 0;
     }
 
     #titlebar {
