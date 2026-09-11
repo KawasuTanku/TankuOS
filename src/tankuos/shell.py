@@ -55,7 +55,7 @@ class AppDropdown(Vertical):
         """Compose the dropdown button + menu items."""
         yield Button("TankuOS ▾", id="dropdown-toggle", classes="dropdown-toggle")
         for name, icon in self.apps.items():
-            item = AppMenuItem(app_name=name, icon=icon)
+            item = AppMenuItem(name=name, icon=icon)
             item.styles.display = "none"
             yield item
 
