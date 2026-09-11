@@ -235,10 +235,11 @@ class Shell(App):
             menu.remove()
             self.dropdown_expanded = False
         except NoMatches:
-            # Menu doesn't exist - mount it
-            desktop = self.query_one("#desktop")
+            # Menu doesn't exist - mount it inside main-area (before pane-grid)
+            # so it shrinks the pane-grid instead of pushing the bottombar
+            main_area = self.query_one("#main-area")
             menu = Container(id="dropdown-menu")
-            desktop.mount(menu)
+            main_area.mount(menu, before=0)  # before pane-grid
             for name, icon in self.apps.items():
                 menu.mount(AppMenuItem(name=name, icon=icon))
             self.dropdown_expanded = True
