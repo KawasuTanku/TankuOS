@@ -1,7 +1,4 @@
-"""Core shell — TankuOS retro desktop.
-
-Step 3: App menu launches real shell pane.
-"""
+"""Core shell — TankuOS retro desktop."""
 
 from typing import Dict, Optional
 
@@ -184,7 +181,6 @@ class Shell(App):
                 yield Button("Apps", id="menu-apps")
                 yield Button("Help", id="menu-help")
 
-            # Empty workspace — panes added from app menu
             with Container(id="workspace"):
                 with Container(id="pane-grid"):
                     pass
@@ -237,24 +233,20 @@ class Shell(App):
 
     def _launch_app(self, app_name: str) -> None:
         """Launch an application in a new pane."""
-        # Remove placeholder if present
         placeholder = self.query_one("#pane-grid", Container)
         for child in list(placeholder.children):
             child.remove()
 
-        # Simple placeholder widget — real plugins will replace this
-# Choose content based on app name
         if app_name == "Shell":
             content = plugins.ShellPane(classes="shell-pane")
         else:
             content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
 
-        # Create pane with plugin content
         pane = Pane(
             title=app_name,
             content=content,
+            pane_id=f"pane-{app_name.lower()}",
         )
-        pane.pane_id = f"pane-{app_name.lower()}"
         self.panes[pane.pane_id] = pane
         placeholder.mount(pane)
         self.notify(f"Launched: {app_name}")
