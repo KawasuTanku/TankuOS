@@ -41,6 +41,7 @@ class Pane(Widget):
     # Map Textual key names to PTY byte sequences
     _KEY_MAP = {
         "enter": "\r",
+        "space": " ",
         "backspace": "\x7f",
         "tab": "\t",
         "escape": "\x1b",
@@ -97,6 +98,7 @@ class Pane(Widget):
             self._process = PtyProcessUnicode.spawn(
                 [self.command] if isinstance(self.command, str) else self.command,
                 dimensions=(24, 80),
+                env={"TERM": "xterm-256color", "PATH": "/usr/local/bin:/usr/bin:/bin"},
             )
             self._running = True
             self._reader_thread = threading.Thread(
