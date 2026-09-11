@@ -43,11 +43,7 @@ class AppMenuItem(Static):
 
 
 class AppDropdown(Widget):
-    """Dropdown application menu toggle button.
-
-    The actual menu items live in a separate #dropdown-menu container
-    (sibling of the topbar) to avoid the Horizontal layout expanding.
-    """
+    """Dropdown application menu toggle button."""
 
     expanded: bool = False
 
@@ -64,14 +60,7 @@ class AppDropdown(Widget):
         """Toggle dropdown on toggle button press."""
         if event.button.id == "dropdown-toggle":
             self.expanded = not self.expanded
-            try:
-                menu = self.app.query_one("#dropdown-menu")
-                if self.expanded:
-                    menu.add_class("expanded")
-                else:
-                    menu.remove_class("expanded")
-            except NoMatches:
-                pass
+            self.app.action_toggle_launcher()
 
 
 class Shell(App):
@@ -85,6 +74,10 @@ class Shell(App):
     #topbar {
         height: 1;
         background: $primary;
+    }
+
+    #dropdown-menu {
+        offset: 1 0;
     }
 
     #tb_left {
@@ -133,16 +126,6 @@ class Shell(App):
         background: $primary;
     }
 
-    #dropdown-menu {
-        display: none;
-        width: auto;
-        height: auto;
-    }
-
-    #dropdown-menu.expanded {
-        display: block;
-        position: absolute;
-    }
 
     #pane-grid {
         layout: grid;
@@ -213,11 +196,6 @@ class Shell(App):
                 yield Static("", id="tb_center")
                 yield Static("CPU --%  MEM --%", id="tb_right")
 
-            # Dropdown menu — hidden by default, shown below topbar
-            with Container(id="dropdown-menu"):
-                for name, icon in self.apps.items():
-                    yield AppMenuItem(name=name, icon=icon)
-
             # Main area with pane grid
             with Container(id="main-area"):
                 with Container(id="pane-grid"):
@@ -253,14 +231,17 @@ class Shell(App):
         """Toggle the app dropdown."""
         try:
             menu = self.query_one("#dropdown-menu")
-            dropdown = self.query_one("#tb_left", AppDropdown)
-            dropdown.expanded = not dropdown.expanded
-            if dropdown.expanded:
-                menu.add_class("expanded")
-            else:
-                menu.remove_class("expanded")
+            # Menu exists - remove it
+            menu.remove()
+            self.dropdown_expanded = False
         except NoMatches:
-            pass
+            # Menu doesn't exist - mount it
+            desktop = self.query_one("#desktop")
+            menu = Container(id="dropdown-menu")
+            desktop.mount(menu)
+            for name, icon in self.apps.items():
+                menu.mount(AppMenuItem(name=name, icon=icon))
+            self.dropdown_expanded = True
 
     def action_help(self) -> None:
         """Show help."""
