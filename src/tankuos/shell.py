@@ -1,12 +1,12 @@
 """Core shell — TankuOS retro desktop.
 
-Clean step 2: app menu via ModalScreen.
+Step 2: App menu via ModalScreen.
 """
 
 from typing import Dict, Optional
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Static, Button
 from textual.binding import Binding
 from textual.screen import ModalScreen
@@ -37,42 +37,61 @@ class AppMenuItem:
 
 
 class AppMenuScreen(ModalScreen):
-    """App selection modal."""
+    """App selection modal — Static items for left alignment."""
 
     CSS = """
+    Screen {
+        align: left top;
+    }
+
     #app-menu {
         width: auto;
-        content-align: left;
         height: auto;
         background: $surface;
         border: solid $accent;
         offset: 22 1;
     }
+
+    .menu-row {
+        width: 100%;
+        height: 1;
+        padding: 0 1;
+    }
+
+    .menu-row:hover {
+        background: $accent;
+    }
+
+    .menu-row:focus {
+        background: $accent;
+    }
     """
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-
-    def on_mount(self) -> None:
-        """Prevent first button from auto-highlighting."""
-        for button in self.query("Button"):
-            button.has_focus = False
+        self._apps = ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]
 
     def compose(self) -> ComposeResult:
-        with Container(id="app-menu"):
-            for name in ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]:
-                yield Button(name, id=name, classes="menu-item")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss(event.button.id)
+        with Vertical(id="app-menu"):
+            for name in self._apps:
+                yield Static(name, id=name, classes="menu-row")
 
     def on_key(self, event) -> None:
         if event.key == "escape":
             self.dismiss(None)
+        elif event.key == "enter":
+            # Get focused item and dismiss with its id
+            focused = self.focused
+            if focused and hasattr(focused, 'id'):
+                self.dismiss(focused.id)
 
     def on_click(self, event) -> None:
-        if event.widget is self:
+        # Click on a Static row
+        widget = event.widget
+        if widget is self:
             self.dismiss(None)
+        elif hasattr(widget, 'id'):
+            self.dismiss(widget.id)
 
 
 class Shell(App):
@@ -129,29 +148,7 @@ class Shell(App):
 
     #statusbar Static {
         width: auto;
-        content-align: left;
         color: $accent;
-    }
-
-    .menu-item {
-        width: auto;
-        content-align: left;
-        height: 1;
-        background: $surface;
-        border: none;
-        text-style: bold;
-        padding: 0 1;
-        content-align: left middle;
-    }
-
-    .menu-item:focus {
-        background: $accent;
-        color: $surface;
-    }
-
-    .menu-item:hover {
-        background: $accent;
-        color: $surface;
     }
     """
 
