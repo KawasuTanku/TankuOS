@@ -53,7 +53,7 @@ class TestPane:
 
     def test_pane_content_render(self):
         content = PaneContent(pane_id="t1")
-        content.text = "Hello World"
+        content.content = "Hello World"
         result = content.render()
         assert "Hello World" in result
 
