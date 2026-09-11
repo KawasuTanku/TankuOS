@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tankuos"
+version = "0.1.0"
+description = "TankuOS — a TUI desktop skeleton for unified terminal application suites"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "KawasuTanku", email = "jjames@phantomhost.net" },
+]
+keywords = ["tui", "terminal", "desktop", "framework", "textual"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Desktop Environment",
+    "Topic :: Terminals",
+]
+
+dependencies = [
+    "textual>=0.60.0",
+    "toml>=0.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/KawasuTanku/TankuOS"
+Documentation = "https://github.com/KawasuTanku/TankuOS#readme"
+Repository = "https://github.com/KawasuTanku/TankuOS"
+Issues = "https://github.com/KawasuTanku/TankuOS/issues"
+
+[project.scripts]
+tankuos = "tankuos.shell:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tankuos"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
