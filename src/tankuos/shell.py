@@ -27,6 +27,8 @@ APPS = {
 class AppMenuScreen(ModalScreen):
     """App selection modal."""
 
+    auto_focus = False
+
     CSS = """
     Screen {
         align: left top;
@@ -48,6 +50,11 @@ class AppMenuScreen(ModalScreen):
         text-style: bold;
         content-align: left middle;
         padding: 0 1;
+    }
+
+    #app-menu Button:hover {
+        background: $accent;
+        color: $surface;
     }
 
     #app-menu Button:focus {
@@ -81,6 +88,8 @@ class AppMenuScreen(ModalScreen):
 
 class Shell(App):
     """TankuOS desktop shell."""
+
+    auto_focus = False
 
     CSS = """
     #desktop {
