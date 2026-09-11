@@ -5,6 +5,7 @@ from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.message import Message
 from rich.text import Text
+from rich.panel import Panel
 
 
 class ClosePaneRequest(Message):
@@ -51,15 +52,18 @@ class Pane(Widget):
         self._update_titlebar()
 
     def _update_titlebar(self) -> None:
-        """Render title bar with Rich Text."""
+        """Render title bar with Rich Text, including top border."""
         width = self.size.width or 80
-        padding = max(0, width - len(self.title) - 4)
         text = Text()
-        text.append(" ")
-        text.append(self.title, style="bold white")
+        # Top border line
+        text.append("+" + "-" * (width - 2) + "+\n", style="bold cyan")
+        # Title line with side borders
+        padding = max(0, width - len(self.title) - 4)
+        text.append("| ")
+        text.append(self.title, style="bold white on #1a1a40")
         text.append(" " * padding)
-        text.append("[x]", style="bold red")
-        text.stylize("on #1a1a40")
+        text.append("[x]", style="bold red on #1a1a40")
+        text.append(" |")
         titlebar = self.query_one("#titlebar", Static)
         titlebar.update(text)
 
@@ -69,7 +73,8 @@ class Pane(Widget):
         if widget and widget.id == "titlebar":
             x = event.x
             width = self.size.width or 80
-            if x >= width - 3:
+            # Check if click is in the [x] area (second line)
+            if event.y >= 1 and x >= width - 5:
                 self.post_message(ClosePaneRequest(self.pane_id))
 
     def on_close_pane_request(self, message: ClosePaneRequest) -> None:
