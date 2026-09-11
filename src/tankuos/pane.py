@@ -1,8 +1,4 @@
-"""Pane widget — hosts a child process in a PTY.
-
-Spawns a process, reads its output, renders to a TankuOS pane,
-and forwards keyboard input.
-"""
+"""Pane widget — hosts a child process in a PTY."""
 
 import re
 import threading
@@ -19,8 +15,17 @@ _ANSI_RE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b\[[\?0-9]*[
 
 
 def strip_ansi(text: str) -> str:
-    """Remove ANSI escape sequences from text."""
-    return _ANSI_RE.sub('', text).replace('', '')
+    """Remove ANSI escape sequences and process backspaces."""
+    text = _ANSI_RE.sub('', text)
+    # Process backspace: delete preceding character
+    result = []
+    for char in text:
+        if char == '\x08':
+            if result:
+                result.pop()
+        else:
+            result.append(char)
+    return ''.join(result)
 
 
 class PaneOutput(Message):
@@ -38,13 +43,12 @@ class Pane(Widget):
     has_focus: bool = False
     can_focus: bool = True
 
-    # Map Textual key names to PTY byte sequences
     _KEY_MAP = {
         "enter": "\r",
-        "space": " ",
-        "backspace": "\x7f",
+        "backspace": "\x08",
         "tab": "\t",
         "escape": "\x1b",
+        "space": " ",
         "up": "\x1b[A",
         "down": "\x1b[B",
         "right": "\x1b[C",
@@ -74,17 +78,14 @@ class Pane(Widget):
         self._lock = threading.Lock()
 
     def compose(self):
-        """Compose the pane — title bar + content area."""
         yield PaneTitleBar(self.title, self.pane_id, id=f"title-{self.pane_id}")
         yield PaneContent(self.pane_id, id=f"content-{self.pane_id}")
 
     def on_mount(self) -> None:
-        """Start the child process when the pane mounts."""
         self._start_process()
         self.set_interval(0.1, self._refresh_content)
 
     def _refresh_content(self) -> None:
-        """Periodic visual refresh."""
         try:
             content = self.query_one(f"#content-{self.pane_id}", PaneContent)
             content.refresh()
@@ -92,7 +93,6 @@ class Pane(Widget):
             pass
 
     def _start_process(self) -> None:
-        """Spawn the child process in a PTY."""
         try:
             from ptyprocess import PtyProcessUnicode
             self._process = PtyProcessUnicode.spawn(
@@ -109,7 +109,6 @@ class Pane(Widget):
             self._output_lines.append(f"Failed to start: {e}")
 
     def _read_output(self) -> None:
-        """Read output from the PTY in a background thread."""
         while self._running and self._process and self._process.isalive():
             try:
                 data = self._process.read(1024)
@@ -126,7 +125,6 @@ class Pane(Widget):
                 break
 
     def write_input(self, data: str) -> None:
-        """Write keyboard input to the PTY."""
         if self._process and self._process.isalive():
             try:
                 self._process.write(data)
@@ -134,7 +132,6 @@ class Pane(Widget):
                 pass
 
     def resize(self, rows: int, cols: int) -> None:
-        """Resize the PTY."""
         if self._process and self._process.isalive():
             try:
                 self._process.setwinsize(rows, cols)
@@ -142,7 +139,6 @@ class Pane(Widget):
                 pass
 
     def kill(self) -> None:
-        """Kill the child process and stop the reader."""
         self._running = False
         if self._process and self._process.isalive():
             try:
@@ -151,7 +147,6 @@ class Pane(Widget):
                 pass
 
     def on_pane_output(self, message: PaneOutput) -> None:
-        """Handle new output — update the content widget."""
         if message.pane_id == self.pane_id:
             try:
                 content = self.query_one(f"#content-{self.pane_id}", PaneContent)
@@ -162,22 +157,16 @@ class Pane(Widget):
                 pass
 
     def on_key(self, event) -> None:
-        """Forward key events to the PTY with proper escape sequence mapping."""
         if not self.has_focus:
             return
-        
-        # Map special keys to PTY escape sequences
         key = event.key
         if key in self._KEY_MAP:
             self.write_input(self._KEY_MAP[key])
         elif len(key) == 1:
-            # Regular character
             self.write_input(key)
         elif key.startswith("ctrl+"):
-            # Ctrl+key combinations (ctrl+c, ctrl+d, etc.)
             char = key.replace("ctrl+", "")
             if len(char) == 1:
-                # Convert to control character (a=0x01, b=0x02, etc.)
                 self.write_input(chr(ord(char) - ord('a') + 1))
 
     def on_focus(self) -> None:
