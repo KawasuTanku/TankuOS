@@ -61,7 +61,7 @@ class TestPane:
 class TestShell:
     def test_shell_creation(self):
         shell = Shell()
-        assert shell.theme_name == "midnight"
+        assert shell.theme_name == "turbopascal"
         assert isinstance(shell.panes, dict)
 
     def test_add_pane(self):
@@ -88,12 +88,12 @@ class TestShell:
     def test_cycle_theme(self):
         shell = Shell()
         shell.action_cycle_theme()
+        assert shell.theme_name == "midnight"
+        shell.action_cycle_theme()
         assert shell.theme_name == "nord"
         shell.action_cycle_theme()
         assert shell.theme_name == "gruvbox"
         shell.action_cycle_theme()
-        assert shell.theme_name == "dracula"
-        shell.action_cycle_theme()
-        assert shell.theme_name == "midnight"
+        assert shell.theme_name == "turbopascal"
         # Reset
         theme.set_palette("midnight")

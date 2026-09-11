@@ -136,6 +136,28 @@ PALETTES: Dict[str, Palette] = {
         selection_bg="#44475a",
         cursor="#f8f8f2",
     ),
+    "turbopascal": Palette(
+        name="turbopascal",
+        description="Classic Turbo Pascal IDE — blue background, white text, ASCII art",
+        bg_primary="#0000aa",
+        bg_secondary="#000088",
+        bg_surface="#0000cc",
+        bg_inset="#000066",
+        text_primary="#ffffff",
+        text_secondary="#aaaaaa",
+        text_disabled="#555555",
+        accent_primary="#ffff55",
+        accent_secondary="#ff55ff",
+        accent_success="#55ff55",
+        accent_warning="#ffff55",
+        accent_error="#ff5555",
+        accent_info="#55ffff",
+        border_primary="#ffffff",
+        border_secondary="#aaaaaa",
+        border_focus="#ffff55",
+        selection_bg="#aaaaaa",
+        cursor="#ffffff",
+    ),
 }
 
 
