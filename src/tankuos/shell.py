@@ -42,6 +42,7 @@ class AppMenuScreen(ModalScreen):
     CSS = """
     #app-menu {
         width: auto;
+        content-align: left;
         height: auto;
         background: $surface;
         border: solid $accent;
@@ -128,17 +129,19 @@ class Shell(App):
 
     #statusbar Static {
         width: auto;
+        content-align: left;
         color: $accent;
     }
 
     .menu-item {
         width: auto;
+        content-align: left;
         height: 1;
         background: $surface;
         border: none;
         text-style: bold;
         padding: 0 1;
-        text-align: left;
+        content-align: left middle;
     }
 
     .menu-item:focus {
