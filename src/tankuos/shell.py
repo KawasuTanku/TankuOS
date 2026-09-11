@@ -7,12 +7,13 @@ from typing import Dict, Optional
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
+from textual.widget import Widget
 from textual.widgets import Static, Button
 from textual.binding import Binding
 from textual.screen import ModalScreen
 
 from tankuos.theme import theme
-from tankuos.pane import Pane
+from tankuos.pane import Pane, ClosePaneRequest
 
 
 APP_ICONS: Dict[str, str] = {
@@ -70,7 +71,7 @@ class AppMenuScreen(ModalScreen):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._apps = ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]
+        self._apps = ["Retirement", "Monster", "MontcoMonitor", "Glances"]
 
     def compose(self) -> ComposeResult:
         with Vertical(id="app-menu"):
@@ -240,13 +241,15 @@ class Shell(App):
         for child in list(placeholder.children):
             child.remove()
 
-        # Create real pane
+        # Simple placeholder widget — real plugins will replace this
+        content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
+
+        # Create pane with plugin content
         pane = Pane(
             title=app_name,
-            command="/bin/bash",
-            pane_id=f"pane-{app_name.lower()}",
-            classes="pane",
+            content=content,
         )
+        pane.pane_id = f"pane-{app_name.lower()}"
         self.panes[pane.pane_id] = pane
         placeholder.mount(pane)
         self.notify(f"Launched: {app_name}")
@@ -258,23 +261,26 @@ class Shell(App):
     def action_quit(self) -> None:
         self.exit()
 
-    def add_pane(self, title: str, command: str, pane_id: str = "") -> Pane:
-        pane_id = pane_id or f"pane-{len(self.panes)}"
-        pane = Pane(title=title, command=command, pane_id=pane_id, classes="pane")
-        self.panes[pane_id] = pane
+    def on_close_pane_request(self, message: ClosePaneRequest) -> None:
+        """Handle close request from pane title bar."""
+        self.remove_pane(message.pane_id)
+
+    def add_pane(self, title: str, content: Widget, pane_id: str = "") -> Pane:
+        """Add a new pane with plugin content."""
+        pane = Pane(title=title, content=content)
+        pane.pane_id = pane_id or f"pane-{len(self.panes)}"
+        self.panes[pane.pane_id] = pane
         return pane
 
     def remove_pane(self, pane_id: str) -> None:
+        """Remove a pane from the desktop."""
         if pane_id in self.panes:
-            self.panes[pane_id].kill()
+            self.panes[pane_id].remove()
             del self.panes[pane_id]
 
     def focus_pane(self, pane_id: str) -> None:
+        """Focus a specific pane."""
         if pane_id in self.panes:
-            if self.active_pane_id and self.active_pane_id in self.panes:
-                self.panes[self.active_pane_id].has_focus = False
-            self.active_pane_id = pane_id
-            self.panes[pane_id].has_focus = True
             self.panes[pane_id].focus()
 
 
