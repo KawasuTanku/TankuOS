@@ -45,6 +45,7 @@ class AppMenuScreen(ModalScreen):
     }
 
     #app-menu {
+        align: left top;
         width: 30;
         height: auto;
         background: $surface;
