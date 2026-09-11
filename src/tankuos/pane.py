@@ -1,11 +1,10 @@
 """Pane widget — a container for plugin content."""
 
 from textual.widget import Widget
-from textual.widgets import Static
+from textual.widgets import Static, Button
+from textual.containers import Horizontal
 from textual.app import ComposeResult
 from textual.message import Message
-
-from tankuos.theme import theme
 
 
 class ClosePaneRequest(Message):
@@ -15,30 +14,6 @@ class ClosePaneRequest(Message):
         self.pane_id = pane_id
 
 
-class PaneTitleBar(Static):
-    """Title bar with inline close button."""
-    
-    def __init__(self, title: str, pane_id: str = "", **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.title = title
-        self.pane_id = pane_id
-        self.add_class("pane-titlebar")
-
-    def render(self):
-        p = theme.palette
-        width = self.size.width or 80
-        # Use Rich markup with actual colors
-        title_text = f"{self.title:<{width - 5}}[bold]  [x][/bold]"
-        return title_text
-
-    def on_click(self, event):
-        """Click on [x] closes pane."""
-        x = event.x
-        width = self.size.width or 80
-        if x >= width - 4:
-            self.post_message(ClosePaneRequest(self.pane_id))
-
-
 class Pane(Widget):
     """A TankuOS pane — hosts a plugin widget with title bar."""
 
@@ -46,18 +21,35 @@ class Pane(Widget):
     Pane {
         layout: vertical;
         height: 1fr;
-        border: solid $primary;
-    }
-
-    Pane:focus-within {
         border: solid $accent;
     }
 
     .pane-titlebar {
         height: 1;
+        layout: horizontal;
         background: $accent;
+        padding: 0;
+    }
+
+    .pane-titlebar Static {
+        width: 1fr;
+        height: 1;
         color: $surface;
         text-style: bold;
+        padding-left: 1;
+    }
+
+    .pane-titlebar Button {
+        width: auto;
+        height: 1;
+        background: $accent;
+        color: $surface;
+        border: none;
+        padding: 0 1;
+    }
+
+    .pane-titlebar Button:hover {
+        background: $error;
     }
     """
 
@@ -68,10 +60,12 @@ class Pane(Widget):
         self.content_widget = content
 
     def compose(self) -> ComposeResult:
-        yield PaneTitleBar(self.title, self.pane_id)
+        with Horizontal(classes="pane-titlebar"):
+            yield Static(self.title)
+            yield Button("[x]", id=f"close-{self.pane_id}")
         yield self.content_widget
 
-    def on_close_pane_request(self, message: ClosePaneRequest) -> None:
-        """Handle close request from title bar click."""
-        if message.pane_id == self.pane_id:
-            self.remove()
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Close button sends request to parent app."""
+        if event.button.id == f"close-{self.pane_id}":
+            self.post_message(ClosePaneRequest(self.pane_id))
