@@ -45,6 +45,12 @@ class TestPane:
         assert pane.pane_id.startswith("pane-")
 
 
+class TestClosePaneRequest:
+    def test_message(self):
+        msg = ClosePaneRequest("pane-test")
+        assert msg.pane_id == "pane-test"
+
+
 class TestShell:
     def test_shell_creation(self):
         shell = Shell()
@@ -61,11 +67,3 @@ class TestShell:
         assert shell.theme_name == "gruvbox"
         shell.action_cycle_theme()
         assert shell.theme_name == "turbopascal"
-        # Reset
-        theme.set_palette("midnight")
-
-
-class TestClosePaneRequest:
-    def test_message(self):
-        msg = ClosePaneRequest("pane-test")
-        assert msg.pane_id == "pane-test"

@@ -7,12 +7,14 @@ from typing import Dict, Optional
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
+from textual.widget import Widget
 from textual.widgets import Static, Button
 from textual.binding import Binding
 from textual.screen import ModalScreen
 
 from tankuos.theme import theme
 from tankuos.pane import Pane, ClosePaneRequest
+from tankuos import plugins
 
 
 APP_ICONS: Dict[str, str] = {
@@ -70,7 +72,7 @@ class AppMenuScreen(ModalScreen):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._apps = ["Retirement", "Monster", "MontcoMonitor", "Glances"]
+        self._apps = ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]
 
     def compose(self) -> ComposeResult:
         with Vertical(id="app-menu"):
@@ -241,7 +243,11 @@ class Shell(App):
             child.remove()
 
         # Simple placeholder widget — real plugins will replace this
-        content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
+# Choose content based on app name
+        if app_name == "Shell":
+            content = plugins.ShellPane(classes="shell-pane")
+        else:
+            content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
 
         # Create pane with plugin content
         pane = Pane(

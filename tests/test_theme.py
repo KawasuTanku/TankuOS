@@ -16,7 +16,6 @@ class TestPalettes:
         for name, palette in PALETTES.items():
             assert isinstance(palette, Palette)
             assert palette.name == name
-            # Check all color attributes are non-empty hex strings
             for attr in [
                 "bg_primary", "bg_secondary", "bg_surface", "bg_inset",
                 "text_primary", "text_secondary", "text_disabled",
@@ -44,6 +43,14 @@ class TestPalettes:
 
 
 class TestTheme:
+    def setup_method(self):
+        """Reset theme to default before each test."""
+        Theme().set_palette("midnight")
+
+    def teardown_method(self):
+        """Clean up theme after each test."""
+        Theme().set_palette("midnight")
+
     def test_singleton(self):
         t1 = Theme()
         t2 = Theme()
@@ -51,14 +58,13 @@ class TestTheme:
 
     def test_default_palette(self):
         t = Theme()
+        # Default is midnight
         assert t.palette.name == "midnight"
 
     def test_set_palette(self):
         t = Theme()
         t.set_palette("nord")
         assert t.palette.name == "nord"
-        # Reset
-        t.set_palette("midnight")
 
     def test_color_accessors(self):
         t = Theme()
@@ -77,5 +83,3 @@ class TestTheme:
         t.set_palette("dracula")
         assert "dracula" in called
         t.remove_listener(on_change)
-        # Reset
-        t.set_palette("midnight")
