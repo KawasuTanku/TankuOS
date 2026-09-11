@@ -40,6 +40,7 @@ class AppMenuScreen(ModalScreen):
         padding: 0 1;
         margin: 0;
         offset: 18 1;
+        align: left top;
     }
 
     #app-menu Button {
