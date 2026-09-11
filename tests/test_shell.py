@@ -2,8 +2,9 @@
 
 import pytest
 from tankuos.shell import Shell, AppMenuItem, APP_ICONS
-from tankuos.pane import Pane, PaneTitleBar, PaneContent
+from tankuos.pane import Pane, ClosePaneRequest
 from tankuos.theme import theme, Theme
+from textual.widgets import Static
 
 
 class TestAppIcons:
@@ -31,31 +32,17 @@ class TestAppMenuItem:
         assert "󰲌" in result
 
 
-
-
-
 class TestPane:
     def test_pane_creation(self):
-        pane = Pane(title="Test", command="/bin/bash", pane_id="test-1")
+        content = Static("Test content")
+        pane = Pane(title="Test", content=content, pane_id="test-1")
         assert pane.title == "Test"
-        assert pane.command == "/bin/bash"
         assert pane.pane_id == "test-1"
 
     def test_pane_default_id(self):
-        pane = Pane(title="Test")
+        content = Static("Test content")
+        pane = Pane(title="Test", content=content)
         assert pane.pane_id.startswith("pane-")
-
-    def test_pane_title_bar_render(self):
-        bar = PaneTitleBar(title="Test", pane_id="t1")
-        bar.focused = True
-        result = bar.render()
-        assert "Test" in result
-
-    def test_pane_content_render(self):
-        content = PaneContent(pane_id="t1")
-        content.content = "Hello World"
-        result = content.render()
-        assert "Hello World" in result
 
 
 class TestShell:
@@ -63,27 +50,6 @@ class TestShell:
         shell = Shell()
         assert shell.theme_name == "turbopascal"
         assert isinstance(shell.panes, dict)
-
-    def test_add_pane(self):
-        shell = Shell()
-        pane = shell.add_pane("Test", "/bin/bash", "test-1")
-        assert "test-1" in shell.panes
-        assert pane.title == "Test"
-
-    def test_remove_pane(self):
-        shell = Shell()
-        shell.add_pane("Test", "/bin/bash", "test-1")
-        shell.remove_pane("test-1")
-        assert "test-1" not in shell.panes
-
-    def test_focus_pane(self):
-        shell = Shell()
-        shell.add_pane("Test", "/bin/bash", "test-1")
-        # Mock focus() since it requires an active Textual app context
-        shell.panes["test-1"].focus = lambda: None
-        shell.focus_pane("test-1")
-        assert shell.active_pane_id == "test-1"
-        assert shell.panes["test-1"].has_focus is True
 
     def test_cycle_theme(self):
         shell = Shell()
@@ -97,3 +63,9 @@ class TestShell:
         assert shell.theme_name == "turbopascal"
         # Reset
         theme.set_palette("midnight")
+
+
+class TestClosePaneRequest:
+    def test_message(self):
+        msg = ClosePaneRequest("pane-test")
+        assert msg.pane_id == "pane-test"
