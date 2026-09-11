@@ -164,7 +164,7 @@ class Shell(App):
         Binding("f1", "help", "Help"),
         Binding("f2", "cycle_theme", "Theme"),
         Binding("f3", "toggle_apps", "Apps"),
-        Binding("q", "quit", "Quit"),
+        Binding("ctrl+q", "quit", "Quit"),
     ]
 
     def __init__(self, **kwargs) -> None:
@@ -191,7 +191,7 @@ class Shell(App):
                 yield Static(" F1 Help")
                 yield Static(" F2 Theme")
                 yield Static(" F3 Apps")
-                yield Static(" Q Quit")
+                yield Static(" Ctrl+Q Quit")
 
     def on_mount(self) -> None:
         self.title = "TankuOS"
@@ -208,7 +208,7 @@ class Shell(App):
             event.button.add_class("active")
             self._menu_button = event.button
             self.action_help()
-        elif event.button.id in ["menu-file", "menu-view"]:
+        elif event.button.id == "menu-view":
             event.button.add_class("active")
             self._menu_button = event.button
             self.notify(f"{event.button.id} (not yet)")
