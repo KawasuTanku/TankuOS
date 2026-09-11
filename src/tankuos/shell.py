@@ -11,6 +11,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Static, Button, Input, Label
 from textual.css.query import NoMatches
 from textual.binding import Binding
+from textual.widget import Widget
 
 from tankuos.theme import theme, TankuHeader
 from tankuos.pane import Pane
@@ -41,8 +42,12 @@ class AppMenuItem(Static):
         return f"  {self.icon} {self.app_name}"
 
 
-class AppDropdown(Vertical):
-    """Dropdown application menu."""
+class AppDropdown(Widget):
+    """Dropdown application menu toggle button.
+
+    The actual menu items live in a separate #dropdown-menu container
+    (sibling of the topbar) to avoid the Horizontal layout expanding.
+    """
 
     expanded: bool = False
 
@@ -52,23 +57,19 @@ class AppDropdown(Vertical):
         self.selected = 0
 
     def compose(self) -> ComposeResult:
-        """Compose the dropdown button + menu items."""
+        """Compose just the toggle button."""
         yield Button("TankuOS ▾", id="dropdown-toggle", classes="dropdown-toggle")
-        for name, icon in self.apps.items():
-            item = AppMenuItem(name=name, icon=icon)
-            item.styles.display = "none"
-            yield item
-
-    def on_mount(self) -> None:
-        """Items are hidden at compose time via styles.display."""
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Toggle dropdown on toggle button press."""
         if event.button.id == "dropdown-toggle":
             self.expanded = not self.expanded
-            for item in self.query(".dropdown-item"):
-                item.styles.display = "block" if self.expanded else "none"
-            self.refresh()
+            try:
+                menu = self.app.query_one("#dropdown-menu")
+                menu.styles.display = "block" if self.expanded else "none"
+                menu.refresh()
+            except NoMatches:
+                pass
 
 
 class Shell(App):
@@ -80,7 +81,7 @@ class Shell(App):
     }
 
     #topbar {
-        height: auto;
+        height: 1;
         background: $primary;
     }
 
@@ -130,9 +131,13 @@ class Shell(App):
         background: $primary;
     }
 
-    #main-area {
-        layout: vertical;
-        height: 1fr;
+    #dropdown-menu {
+        position: absolute;
+        top: 1;
+        left: 1;
+        display: none;
+        width: auto;
+        height: auto;
     }
 
     #pane-grid {
@@ -204,6 +209,11 @@ class Shell(App):
                 yield Static("", id="tb_center")
                 yield Static("CPU --%  MEM --%", id="tb_right")
 
+            # Dropdown menu — hidden by default, shown below topbar
+            with Container(id="dropdown-menu"):
+                for name, icon in self.apps.items():
+                    yield AppMenuItem(name=name, icon=icon)
+
             # Main area with pane grid
             with Container(id="main-area"):
                 with Container(id="pane-grid"):
@@ -238,13 +248,11 @@ class Shell(App):
     def action_toggle_launcher(self) -> None:
         """Toggle the app dropdown."""
         try:
+            menu = self.query_one("#dropdown-menu")
             dropdown = self.query_one("#tb_left", AppDropdown)
             dropdown.expanded = not dropdown.expanded
-            for item in dropdown.query(".dropdown-item"):
-                if dropdown.expanded:
-                    item.styles.display = "block"
-                else:
-                    item.styles.display = "none"
+            menu.styles.display = "block" if dropdown.expanded else "none"
+            menu.refresh()
         except NoMatches:
             pass
 
