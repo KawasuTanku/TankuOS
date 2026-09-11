@@ -30,6 +30,8 @@ classifiers = [
 
 dependencies = [
     "textual>=0.60.0",
+    "ptyprocess>=0.7.0",
+    "psutil>=5.9.0",
     "toml>=0.10.0",
 ]
 

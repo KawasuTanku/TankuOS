@@ -14,12 +14,12 @@ TankuOS provides the chrome — window management, theming, layout persistence, 
 - [x] Typography conventions
 - [x] Theme switching (midnight, nord, gruvbox, dracula)
 
-### Chunk 2: Core Shell
-- [ ] Grid layout with panes
-- [ ] Launcher sidebar
-- [ ] Status bar
-- [ ] Pane management (open, close, focus, resize)
-- [ ] Child process hosting (PTY)
+### Chunk 2: Core Shell ✅ (current)
+- [x] Grid layout with panes
+- [x] Launcher sidebar
+- [x] Status bar
+- [x] Pane management (open, close, focus, resize)
+- [x] Child process hosting (PTY)
 
 ### Chunk 3: Layout Persistence
 - [ ] Save/restore pane positions to TOML
