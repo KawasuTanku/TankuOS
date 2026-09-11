@@ -66,8 +66,10 @@ class AppDropdown(Widget):
             self.expanded = not self.expanded
             try:
                 menu = self.app.query_one("#dropdown-menu")
-                menu.styles.display = "block" if self.expanded else "none"
-                menu.refresh()
+                if self.expanded:
+                    menu.add_class("expanded")
+                else:
+                    menu.remove_class("expanded")
             except NoMatches:
                 pass
 
@@ -133,8 +135,14 @@ class Shell(App):
 
     #dropdown-menu {
         display: none;
+        width: auto;
+        height: auto;
     }
 
+    #dropdown-menu.expanded {
+        display: block;
+        position: absolute;
+    }
 
     #pane-grid {
         layout: grid;
@@ -247,8 +255,10 @@ class Shell(App):
             menu = self.query_one("#dropdown-menu")
             dropdown = self.query_one("#tb_left", AppDropdown)
             dropdown.expanded = not dropdown.expanded
-            menu.styles.display = "block" if dropdown.expanded else "none"
-            menu.refresh()
+            if dropdown.expanded:
+                menu.add_class("expanded")
+            else:
+                menu.remove_class("expanded")
         except NoMatches:
             pass
 
