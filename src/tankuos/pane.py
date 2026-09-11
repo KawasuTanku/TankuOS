@@ -1,10 +1,10 @@
 """Pane widget — a container for plugin content."""
 
 from textual.widget import Widget
-from textual.widgets import Static, Header, Button
-from textual.containers import Horizontal
+from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.message import Message
+from rich.text import Text
 
 
 class ClosePaneRequest(Message):
@@ -28,28 +28,6 @@ class Pane(Widget):
         height: 1;
         background: #1a1a40;
     }
-
-    #ttl {
-        width: 1fr;
-        color: white;
-        text-style: bold;
-    }
-
-    #cls {
-        width: auto;
-        background: #1a1a40;
-        color: #ff5555;
-        border: none;
-    }
-
-    #cls:hover {
-        background: #ff5555;
-        color: white;
-    }
-
-    #content {
-        height: 1fr;
-    }
     """
 
     def __init__(self, title: str, content: Widget, pane_id: str = "", **kwargs) -> None:
@@ -59,12 +37,40 @@ class Pane(Widget):
         self.content_widget = content
 
     def compose(self) -> ComposeResult:
-        with Horizontal(id="titlebar"):
-            yield Static(self.title, id="ttl")
-            yield Button("[x]", id="cls")
+        yield Static("", id="titlebar")
         self.content_widget.add_class("pane-content")
         yield self.content_widget
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Close button sends request to parent app."""
-        self.post_message(ClosePaneRequest(self.pane_id))
+    def on_mount(self) -> None:
+        """Set title bar content after mount."""
+        self._update_titlebar()
+
+    def on_resize(self) -> None:
+        """Update title bar on resize."""
+        self._update_titlebar()
+
+    def _update_titlebar(self) -> None:
+        """Render title bar with Rich Text."""
+        width = self.size.width or 80
+        padding = max(0, width - len(self.title) - 4)
+        text = Text()
+        text.append(" ")
+        text.append(self.title, style="bold white")
+        text.append(" " * padding)
+        text.append("[x]", style="bold red")
+        text.stylize("on #1a1a40")
+        titlebar = self.query_one("#titlebar", Static)
+        titlebar.update(text)
+
+    def on_click(self, event):
+        """Click on titlebar [x] closes pane."""
+        widget = event.widget
+        if widget and widget.id == "titlebar":
+            x = event.x
+            width = self.size.width or 80
+            if x >= width - 3:
+                self.post_message(ClosePaneRequest(self.pane_id))
+
+    def on_close_pane_request(self, message: ClosePaneRequest) -> None:
+        if message.pane_id == self.pane_id:
+            self.remove()
