@@ -309,11 +309,6 @@ class Shell(App):
 
     def _launch_app(self, app_name: str) -> None:
         """Launch an application in a new pane."""
-        if app_name == "Shell":
-            content = plugins.ShellPane(classes="shell-pane")
-        else:
-            content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
-
         # Generate unique pane ID (allow multiple instances of same app)
         base_id = f"pane-{app_name.lower()}"
         pane_id = base_id
@@ -322,8 +317,8 @@ class Shell(App):
             pane_id = f"{base_id}-{counter}"
             counter += 1
         
-        # Store pane state (title + content widget)
-        self.panes[pane_id] = {"title": app_name, "content": content}
+        # Store pane state (title + app name for recreation)
+        self.panes[pane_id] = {"title": app_name, "app_name": app_name}
         self._rebuild_grid()
         self.notify(f"Launched: {app_name}")
 
@@ -357,10 +352,17 @@ class Shell(App):
                 idx = r * cols + c
                 if idx < len(panes_list):
                     pane_id, pane_info = panes_list[idx]
-                    # Create a fresh Pane wrapper (reuses content widget)
+                    # Create fresh content widget for each rebuild
+                    app_name = pane_info["app_name"]
+                    if app_name == "Shell":
+                        content = plugins.ShellPane(classes="shell-pane")
+                    else:
+                        content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
+                    
+                    # Create a fresh Pane wrapper
                     pane = Pane(
                         title=pane_info["title"],
-                        content=pane_info["content"],
+                        content=content,
                         pane_id=pane_id,
                     )
                     row.mount(pane)
@@ -379,7 +381,7 @@ class Shell(App):
     def add_pane(self, title: str, content: Widget, pane_id: str = "") -> None:
         """Add a new pane with plugin content."""
         pid = pane_id or f"pane-{title.lower()}"
-        self.panes[pid] = {"title": title, "content": content}
+        self.panes[pid] = {"title": title, "app_name": title}
         self._rebuild_grid()
 
     def remove_pane(self, pane_id: str) -> None:
