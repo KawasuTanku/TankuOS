@@ -22,6 +22,15 @@ class Pane(Vertical):
     Pane {
         height: 1fr;
     }
+    
+    #titlebar {
+        height: 1;
+        background: $primary;
+    }
+    
+    .pane-content {
+        height: 1fr;
+    }
     """
 
     can_focus = True

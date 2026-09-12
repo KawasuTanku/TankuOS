@@ -208,18 +208,22 @@ class Shell(App):
         height: 1fr;
     }
 
-    #pane-grid > Horizontal > Container {
+    .pane-cell {
         width: 1fr;
         height: 1fr;
         border: solid $primary;
     }
 
-    #pane-grid > Horizontal > Container > Pane {
+    .pane-cell > Pane {
         height: 1fr;
     }
 
-    #pane-grid > Horizontal > Container.focused {
+    .pane-cell.focused {
         border: solid $accent;
+    }
+
+    .pane-cell.cell-empty {
+        display: none;
     }
     """
 
@@ -253,7 +257,7 @@ class Shell(App):
                     row = Horizontal()
                     yield row
                     for i in range(self.MAX_CELLS):
-                        cell = Container(classes="pane-cell", id=f"cell-{i}")
+                        cell = Container(classes="pane-cell cell-empty", id=f"cell-{i}")
                         self._cells.append(cell)
                         row.mount(cell)
 
@@ -343,6 +347,9 @@ class Shell(App):
         )
         self.panes[pane_id] = {"title": app_name, "pane": pane, "cell": cell_idx}
         self._cells[cell_idx].mount(pane)
+        self._cells[cell_idx].remove_class("cell-empty")
+        # Force layout refresh
+        self.refresh(layout=True)
         self.notify(f"Launched: {app_name}")
 
     def _find_empty_cell(self) -> Optional[int]:
@@ -368,9 +375,12 @@ class Shell(App):
         if pane_id in self.panes:
             pane_info = self.panes[pane_id]
             pane = pane_info["pane"]
+            cell_idx = pane_info["cell"]
             # Remove the pane widget from its cell
             pane.remove()
             del self.panes[pane_id]
+            # Add cell-empty class to hide the cell
+            self._cells[cell_idx].add_class("cell-empty")
 
     def focus_pane_by_id(self, pane_id: str) -> None:
         """Focus a specific pane by ID, unfocus all others."""
