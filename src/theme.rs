@@ -114,19 +114,41 @@ impl Theme {
         }
     }
 
+    /// Osaka Jade — deep jade green with warm cream and gold accents.
+    pub const fn osaka_jade() -> Self {
+        Theme {
+            desktop_bg: rgb(17, 28, 24),
+            window_bg: rgb(26, 42, 35),
+            title_focus: rgb(54, 69, 56),
+            title_blur: rgb(35, 55, 43),
+            title_fg: rgb(214, 213, 188),
+            border: rgb(58, 77, 66),
+            shadow: Rgba { r: 0, g: 0, b: 0, a: 120 },
+            ctrl_fg: rgb(193, 196, 151),
+            close_fg: rgb(230, 125, 100),
+            menubar_bg: rgb(21, 34, 29),
+            dock_bg: rgb(21, 34, 29),
+            text: rgb(247, 232, 178),
+            dim: rgb(138, 148, 112),
+            accent: rgb(80, 148, 117),
+            active_bg: rgb(54, 69, 56),
+        }
+    }
+
     /// Resolve a theme by name (falls back to `midnight`).
     pub fn named(name: &str) -> Self {
         match name.to_lowercase().as_str() {
             "nord" => Self::nord(),
             "gruvbox" => Self::gruvbox(),
             "dracula" => Self::dracula(),
+            "osaka-jade" | "osaka_jade" | "osakajade" => Self::osaka_jade(),
             _ => Self::midnight(),
         }
     }
 }
 
 /// The names of the built-in presets (for the Settings cycler).
-pub const PRESETS: &[&str] = &["midnight", "nord", "gruvbox", "dracula"];
+pub const PRESETS: &[&str] = &["midnight", "nord", "gruvbox", "dracula", "osaka-jade"];
 
 fn slot() -> &'static RwLock<Theme> {
     static THEME: OnceLock<RwLock<Theme>> = OnceLock::new();
