@@ -189,11 +189,22 @@ class Shell(App):
     }
 
     #pane-grid {
-        layout: grid;
-        grid-size: 1 1;
         height: 1fr;
         padding: 0;
-        grid-gutter: 1;
+        layout: vertical;
+    }
+    
+    #pane-grid > Horizontal {
+        height: 1fr;
+    }
+    
+    #pane-grid > Horizontal > Vertical {
+        width: 1fr;
+        border: solid $primary;
+    }
+    
+    #pane-grid > Horizontal > Vertical:focus-within {
+        border: solid $accent;
     }
 
     #statusbar {
@@ -207,13 +218,6 @@ class Shell(App):
         color: $accent;
     }
 
-    .pane {
-        border: solid $primary;
-    }
-
-    .pane:focus-within {
-        border: solid $accent;
-    }
     """
 
     BINDINGS = [
@@ -226,7 +230,7 @@ class Shell(App):
         super().__init__(**kwargs)
         self.theme_name = "turbopascal"
         self._menu_button = None
-        self.panes: Dict[str, Pane] = {}
+        self.panes: Dict[str, dict] = {}
         self.active_pane_id: Optional[str] = None
 
     def compose(self) -> ComposeResult:
@@ -300,43 +304,26 @@ class Shell(App):
 
     def _launch_app(self, app_name: str) -> None:
         """Launch an application in a new pane."""
-        placeholder = self.query_one("#pane-grid", Container)
-
         if app_name == "Shell":
             content = plugins.ShellPane(classes="shell-pane")
         else:
             content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
 
-        # Calculate new grid size BEFORE mounting
-        new_count = len(self.panes) + 1
-        if new_count <= 1:
-            cols, rows = 1, 1
-        elif new_count == 2:
-            cols, rows = 2, 1
-        elif new_count <= 4:
-            cols, rows = 2, 2
-        elif new_count <= 6:
-            cols, rows = 3, 2
-        else:
-            cols, rows = 3, 3
-        placeholder.styles.grid_size_columns = cols
-        placeholder.styles.grid_size_rows = rows
-        placeholder.refresh()
-
-        pane = Pane(
-            title=app_name,
-            content=content,
-            pane_id=f"pane-{app_name.lower()}",
-            classes="pane",
-        )
-        self.panes[pane.pane_id] = pane
-        placeholder.mount(pane)
-        self.refresh()
+        # Store pane state (title + content widget)
+        pane_id = f"pane-{app_name.lower()}"
+        self.panes[pane_id] = {"title": app_name, "content": content}
+        self._rebuild_grid()
         self.notify(f"Launched: {app_name}")
 
-    def _reflow_grid(self) -> None:
-        """Recalculate grid dimensions based on pane count."""
-        placeholder = self.query_one("#pane-grid", Container)
+    def _rebuild_grid(self) -> None:
+        """Rebuild the grid using nested Horizontal/Vertical containers."""
+        grid = self.query_one("#pane-grid", Container)
+        
+        # Clear existing children
+        for child in list(grid.children):
+            child.remove()
+
+        # Calculate grid size
         count = len(self.panes)
         if count <= 1:
             cols, rows = 1, 1
@@ -348,10 +335,27 @@ class Shell(App):
             cols, rows = 3, 2
         else:
             cols, rows = 3, 3
-        placeholder.styles.grid_size_columns = cols
-        placeholder.styles.grid_size_rows = rows
-        placeholder.refresh()
-        self.refresh()
+
+        # Build nested Horizontal/Vertical layout
+        panes_list = list(self.panes.items())
+        for r in range(rows):
+            row = Horizontal()
+            grid.mount(row)
+            for c in range(cols):
+                idx = r * cols + c
+                if idx < len(panes_list):
+                    pane_id, pane_info = panes_list[idx]
+                    # Create a fresh Pane wrapper (reuses content widget)
+                    pane = Pane(
+                        title=pane_info["title"],
+                        content=pane_info["content"],
+                        pane_id=pane_id,
+                    )
+                    cell = Vertical()
+                    cell.styles.width = "1fr"
+                    cell.styles.height = "1fr"
+                    row.mount(cell)
+                    cell.mount(pane)
 
     def action_help(self) -> None:
         self.notify("TankuOS — Retro Desktop | F1: Help | F2: Theme | F3: Apps | TankuOS → Exit to Quit")
@@ -364,24 +368,21 @@ class Shell(App):
         """Handle close request from pane title bar."""
         self.remove_pane(message.pane_id)
 
-    def add_pane(self, title: str, content: Widget, pane_id: str = "") -> Pane:
+    def add_pane(self, title: str, content: Widget, pane_id: str = "") -> None:
         """Add a new pane with plugin content."""
-        pane = Pane(title=title, content=content)
-        pane.pane_id = pane_id or f"pane-{len(self.panes)}"
-        self.panes[pane.pane_id] = pane
-        return pane
+        pid = pane_id or f"pane-{title.lower()}"
+        self.panes[pid] = {"title": title, "content": content}
+        self._rebuild_grid()
 
     def remove_pane(self, pane_id: str) -> None:
         """Remove a pane from the desktop."""
         if pane_id in self.panes:
-            self.panes[pane_id].remove()
             del self.panes[pane_id]
-            self._reflow_grid()
+            self._rebuild_grid()
 
     def focus_pane(self, pane_id: str) -> None:
         """Focus a specific pane."""
-        if pane_id in self.panes:
-            self.panes[pane_id].focus()
+        pass  # TODO: implement focus tracking
 
 
 def main() -> None:
