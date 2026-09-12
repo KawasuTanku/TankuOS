@@ -24,6 +24,63 @@ APP_ICONS: Dict[str, str] = {
 }
 
 
+class SystemMenuScreen(ModalScreen):
+    """System menu — session options."""
+
+    CSS = """
+    Screen {
+        background: $surface;
+        align: left top;
+    }
+
+    #system-menu {
+        width: 20;
+        height: auto;
+        background: $surface;
+        border: solid $accent;
+        offset: 0 1;
+    }
+
+    .sys-row {
+        width: 20;
+        height: 1;
+        padding: 0 1;
+    }
+
+    .sys-row:hover {
+        background: $accent;
+    }
+
+    .sys-row:focus {
+        background: $accent;
+    }
+    """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._items = ["Exit"]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="system-menu"):
+            for name in self._items:
+                yield Static(name, id=name, classes="sys-row")
+
+    def on_key(self, event) -> None:
+        if event.key == "escape":
+            self.dismiss(None)
+        elif event.key == "enter":
+            focused = self.focused
+            if focused and hasattr(focused, 'id'):
+                self.dismiss(focused.id)
+
+    def on_click(self, event) -> None:
+        widget = event.widget
+        if widget is self:
+            self.dismiss(None)
+        elif hasattr(widget, 'id'):
+            self.dismiss(widget.id)
+
+
 class AppMenuItem:
     """Compat stub for tests."""
 
@@ -163,7 +220,6 @@ class Shell(App):
         Binding("f1", "help", "Help"),
         Binding("f2", "cycle_theme", "Theme"),
         Binding("f3", "toggle_apps", "Apps"),
-        Binding("ctrl+q", "quit", "Quit"),
     ]
 
     def __init__(self, **kwargs) -> None:
@@ -189,7 +245,6 @@ class Shell(App):
                 yield Static(" F1 Help")
                 yield Static(" F2 Theme")
                 yield Static(" F3 Apps")
-                yield Static(" Ctrl+Q Quit")
 
     def on_mount(self) -> None:
         self.title = "TankuOS"
@@ -198,7 +253,11 @@ class Shell(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self._clear_active_menu()
-        if event.button.id == "menu-apps":
+        if event.button.id == "menu-file":
+            event.button.add_class("active")
+            self._menu_button = event.button
+            self.action_system_menu()
+        elif event.button.id == "menu-apps":
             event.button.add_class("active")
             self._menu_button = event.button
             self.action_toggle_apps()
@@ -215,6 +274,14 @@ class Shell(App):
         if self._menu_button:
             self._menu_button.remove_class("active")
             self._menu_button = None
+
+    def action_system_menu(self) -> None:
+        self.push_screen(SystemMenuScreen(), self._on_system_menu_selected)
+
+    def _on_system_menu_selected(self, choice: Optional[str]) -> None:
+        self._clear_active_menu()
+        if choice == "Exit":
+            self.exit()
 
     def action_cycle_theme(self) -> None:
         themes = ["turbopascal", "midnight", "nord", "gruvbox"]
@@ -253,7 +320,7 @@ class Shell(App):
         self.notify(f"Launched: {app_name}")
 
     def action_help(self) -> None:
-        self.notify("TankuOS — Retro Desktop | F2: Theme | F3: Apps | Q: Quit")
+        self.notify("TankuOS — Retro Desktop | F1: Help | F2: Theme | F3: Apps | TankuOS → Exit to Quit")
         self._clear_active_menu()
 
     def action_quit(self) -> None:
