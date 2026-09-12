@@ -6,19 +6,19 @@ use crate::window::WindowId;
 // ── Theme constants ────────────────────────────────────────────────────────────
 
 /// Label drawn for the top-left launcher button (opens the app launcher).
-const GO_LABEL: &str = " Applications ";
+const GO_LABEL: &str = " Apps ";
 
 /// Column where the view-mode toggle is drawn (just right of the brand button).
-const MODE_X: i32 = 8; // GO_LABEL is 7 cells wide, + a 1-cell gap
+const MODE_X: i32 = 5; // GO_LABEL is 7 cells wide, + a 1-cell gap
 
 /// Column where the assistant (✦) button is drawn (right of the mode toggle).
-const ASSIST_X: i32 = 12;
+const ASSIST_X: i32 = 9;
 
 /// Label for the assistant button (opens the AI chat panel).
 const ASSIST_LABEL: &str = " \u{2726} "; // ✦
 
 /// Column where the focused-app name starts (after brand + mode + assistant).
-const APP_X: i32 = 16;
+const APP_X: i32 = 13;
 
 /// Menubar view-mode toggle glyphs (shows the CURRENT mode; click to switch).
 const MODE_DESKTOP: &str = " \u{229E} "; // ⊞  windowed desktop

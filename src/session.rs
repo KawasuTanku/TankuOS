@@ -1272,9 +1272,7 @@ or a remote-side error — its authorized_keys was left untouched)",
     fn build_launcher_apps(cfg: &Config, systems: &[crate::systems::RemoteSystem]) -> Vec<AppEntry> {
         // Pinned tankuos actions first (open the store / settings windows).
         let mut apps = vec![
-            AppEntry { name: "Store".into(), command: "@store".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
             AppEntry { name: "Settings".into(), command: "@settings".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
-            AppEntry { name: "Files".into(), command: "@files".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
             AppEntry { name: "Logs".into(), command: "@logs".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
             AppEntry { name: "Activity".into(), command: "@activity".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
         ];

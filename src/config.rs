@@ -167,8 +167,6 @@ fn default_true() -> bool { true }
 /// `desktop_pins` field (so existing users still get Files + Store on the desktop).
 fn default_desktop_pins() -> Vec<AppEntry> {
     vec![
-        AppEntry { name: "Files".into(), command: "@files".into(), args: vec![], category: None, requires_cwd: None, cwd: None, cli: None, warn: None },
-        AppEntry { name: "Store".into(), command: "@store".into(), args: vec![], category: None, requires_cwd: None, cwd: None, cli: None, warn: None },
     ]
 }
 
