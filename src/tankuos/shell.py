@@ -132,6 +132,10 @@ class ShellPane(Pane):
             return
 
         try:
+            # Save curses state, leave curses mode, run command, restore state
+            curses.def_prog_mode()
+            curses.endwin()
+
             result = subprocess.run(
                 command,
                 shell=True,
@@ -143,10 +147,18 @@ class ShellPane(Pane):
             output = result.stdout + result.stderr
             if output.strip():
                 self.add_content(output.rstrip())
+
+            # Restore curses mode
+            curses.reset_prog_mode()
+            curses.doupdate()
         except subprocess.TimeoutExpired:
             self.add_content("Command timed out")
+            curses.reset_prog_mode()
+            curses.doupdate()
         except Exception as e:
             self.add_content(f"Error: {e}")
+            curses.reset_prog_mode()
+            curses.doupdate()
 
         self.add_content("$ ")
 
