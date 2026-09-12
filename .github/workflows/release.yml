@@ -1,6 +1,6 @@
 name: Release
 
-# Builds standalone tuiui binaries and attaches them to the GitHub Release, so
+# Builds standalone TankuOS binaries and attaches them to the GitHub Release, so
 # users can install with the curl | sh installer without a Rust toolchain.
 #
 # Three ways to cut a release, all converging on the same build+publish job:
@@ -126,7 +126,7 @@ jobs:
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Package
-        run: tar -C target/${{ matrix.target }}/release -czf tuiui-${{ matrix.target }}.tar.gz tuiui
+        run: tar -C target/${{ matrix.target }}/release -czf tankuos-${{ matrix.target }}.tar.gz tankuos
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
@@ -135,4 +135,4 @@ jobs:
           # else attaches to the existing tag's release.
           tag_name: ${{ needs.decide.outputs.tag }}
           body: "See CHANGELOG.md for the full release notes."
-          files: tuiui-${{ matrix.target }}.tar.gz
+          files: tankuos-${{ matrix.target }}.tar.gz

@@ -434,7 +434,7 @@ impl Settings {
             _ => {
                 buf.write_str(cx, 3, "TankuOS — a desktop environment for the terminal", FG, BG);
                 buf.write_str(cx, 5, "Settings are saved to ~/.config/tankuos/config.toml", DIM, BG);
-                buf.write_str(cx, 6, "github.com/jaylfc/tankuos", DIM, BG);
+                buf.write_str(cx, 6, "github.com/KawasuTanku/TankuOS", DIM, BG);
             }
         }
         buf

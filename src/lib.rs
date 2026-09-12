@@ -50,7 +50,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// The git commit this binary was built from (stamped by `build.rs`).
 pub const GIT_SHA: &str = env!("TANKUOS_GIT_SHA");
 /// Upstream repository the in-app updater checks/installs from.
-pub const REPO_URL: &str = "https://github.com/jaylfc/tankuos";
+pub const REPO_URL: &str = "https://github.com/KawasuTanku/TankuOS";
 
 /// Max size of `~/tankuos-debug.log` before it's reset, so a long-running session
 /// can't grow it without bound.
