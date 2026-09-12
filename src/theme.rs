@@ -117,21 +117,21 @@ impl Theme {
     /// Osaka Jade — deep jade green with warm cream and gold accents.
     pub const fn osaka_jade() -> Self {
         Theme {
-            desktop_bg: rgb(15, 30, 22),
-            window_bg: rgb(22, 40, 30),
-            title_focus: rgb(40, 72, 55),
-            title_blur: rgb(30, 55, 40),
+            desktop_bg: rgb(35, 58, 48),
+            window_bg: rgb(28, 48, 40),
+            title_focus: rgb(48, 80, 62),
+            title_blur: rgb(38, 64, 52),
             title_fg: rgb(214, 213, 188),
-            border: rgb(48, 80, 62),
+            border: rgb(58, 77, 66),
             shadow: Rgba { r: 0, g: 0, b: 0, a: 120 },
             ctrl_fg: rgb(170, 200, 140),
             close_fg: rgb(230, 125, 100),
-            menubar_bg: rgb(18, 35, 26),
-            dock_bg: rgb(18, 35, 26),
+            menubar_bg: rgb(30, 50, 42),
+            dock_bg: rgb(30, 50, 42),
             text: rgb(247, 232, 178),
-            dim: rgb(120, 160, 110),
-            accent: rgb(70, 165, 110),
-            active_bg: rgb(45, 80, 58),
+            dim: rgb(138, 168, 128),
+            accent: rgb(80, 148, 117),
+            active_bg: rgb(54, 88, 68),
         }
     }
 
