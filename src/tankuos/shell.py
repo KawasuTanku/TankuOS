@@ -309,8 +309,15 @@ class Shell(App):
         else:
             content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
 
+        # Generate unique pane ID (allow multiple instances of same app)
+        base_id = f"pane-{app_name.lower()}"
+        pane_id = base_id
+        counter = 1
+        while pane_id in self.panes:
+            pane_id = f"{base_id}-{counter}"
+            counter += 1
+        
         # Store pane state (title + content widget)
-        pane_id = f"pane-{app_name.lower()}"
         self.panes[pane_id] = {"title": app_name, "content": content}
         self._rebuild_grid()
         self.notify(f"Launched: {app_name}")
