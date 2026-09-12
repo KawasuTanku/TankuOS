@@ -188,30 +188,6 @@ class Shell(App):
         padding: 0;
     }
 
-    #pane-grid {
-        height: 1fr;
-        padding: 0;
-        layout: vertical;
-    }
-    
-    #pane-grid > Horizontal {
-        height: 1fr;
-    }
-    
-    #pane-grid > Horizontal > Pane {
-        width: 1fr;
-        height: 1fr;
-        border: solid $primary;
-    }
-    
-    #pane-grid > Horizontal > Pane:focus-within {
-        border: solid $accent;
-    }
-    
-    #pane-grid > Horizontal > Pane.focused {
-        border: solid $accent;
-    }
-
     #statusbar {
         height: 1;
         background: $secondary;
@@ -223,6 +199,30 @@ class Shell(App):
         color: $accent;
     }
 
+    #pane-grid {
+        height: 1fr;
+        padding: 0;
+        layout: grid;
+        grid-size: 3 1;
+        grid-gutter: 1;
+    }
+
+    .pane-cell {
+        height: 1fr;
+        border: solid $primary;
+    }
+
+    .pane-cell > Pane {
+        height: 1fr;
+    }
+
+    .pane-cell.focused {
+        border: solid $accent;
+    }
+
+    .pane-cell:empty {
+        display: none;
+    }
     """
 
     BINDINGS = [
@@ -231,12 +231,15 @@ class Shell(App):
         Binding("f3", "toggle_apps", "Apps"),
     ]
 
+    MAX_CELLS = 3
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.theme_name = "turbopascal"
         self._menu_button = None
         self.panes: Dict[str, dict] = {}
         self.active_pane_id: Optional[str] = None
+        self._cells: list = []
 
     def compose(self) -> ComposeResult:
         with Container(id="desktop"):
@@ -247,8 +250,11 @@ class Shell(App):
                 yield Button("Help", id="menu-help")
 
             with Container(id="workspace"):
-                with Container(id="pane-grid"):
-                    pass
+                with Container(id="pane-grid") as self._grid:
+                    for i in range(self.MAX_CELLS):
+                        cell = Container(classes="pane-cell", id=f"cell-{i}")
+                        self._cells.append(cell)
+                        yield cell
 
             with Horizontal(id="statusbar"):
                 yield Static(" F1 Help")
@@ -309,6 +315,11 @@ class Shell(App):
 
     def _launch_app(self, app_name: str) -> None:
         """Launch an application in a new pane."""
+        if app_name == "Shell":
+            content = plugins.ShellPane(classes="shell-pane")
+        else:
+            content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
+
         # Generate unique pane ID (allow multiple instances of same app)
         base_id = f"pane-{app_name.lower()}"
         pane_id = base_id
@@ -316,56 +327,29 @@ class Shell(App):
         while pane_id in self.panes:
             pane_id = f"{base_id}-{counter}"
             counter += 1
-        
-        # Store pane state (title + app name for recreation)
-        self.panes[pane_id] = {"title": app_name, "app_name": app_name}
-        self._rebuild_grid()
+
+        # Find empty cell
+        cell_idx = self._find_empty_cell()
+        if cell_idx is None:
+            self.notify("No empty cells (max 3)")
+            return
+
+        # Create Pane and mount it in the cell
+        pane = Pane(
+            title=app_name,
+            content=content,
+            pane_id=pane_id,
+        )
+        self.panes[pane_id] = {"title": app_name, "pane": pane, "cell": cell_idx}
+        self._cells[cell_idx].mount(pane)
         self.notify(f"Launched: {app_name}")
 
-    def _rebuild_grid(self) -> None:
-        """Rebuild the grid using nested Horizontal/Vertical containers."""
-        grid = self.query_one("#pane-grid", Container)
-        
-        # Clear existing children
-        for child in list(grid.children):
-            child.remove()
-
-        # Calculate grid size
-        count = len(self.panes)
-        if count <= 1:
-            cols, rows = 1, 1
-        elif count == 2:
-            cols, rows = 2, 1
-        elif count <= 4:
-            cols, rows = 2, 2
-        elif count <= 6:
-            cols, rows = 3, 2
-        else:
-            cols, rows = 3, 3
-
-        # Build nested Horizontal/Vertical layout
-        panes_list = list(self.panes.items())
-        for r in range(rows):
-            row = Horizontal()
-            grid.mount(row)
-            for c in range(cols):
-                idx = r * cols + c
-                if idx < len(panes_list):
-                    pane_id, pane_info = panes_list[idx]
-                    # Create fresh content widget for each rebuild
-                    app_name = pane_info["app_name"]
-                    if app_name == "Shell":
-                        content = plugins.ShellPane(classes="shell-pane")
-                    else:
-                        content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
-                    
-                    # Create a fresh Pane wrapper
-                    pane = Pane(
-                        title=pane_info["title"],
-                        content=content,
-                        pane_id=pane_id,
-                    )
-                    row.mount(pane)
+    def _find_empty_cell(self) -> Optional[int]:
+        """Find the first empty cell index."""
+        for i, cell in enumerate(self._cells):
+            if len(list(cell.children)) == 0:
+                return i
+        return None
 
     def action_help(self) -> None:
         self.notify("TankuOS — Retro Desktop | F1: Help | F2: Theme | F3: Apps | TankuOS → Exit to Quit")
@@ -378,31 +362,26 @@ class Shell(App):
         """Handle close request from pane title bar."""
         self.remove_pane(message.pane_id)
 
-    def add_pane(self, title: str, content: Widget, pane_id: str = "") -> None:
-        """Add a new pane with plugin content."""
-        pid = pane_id or f"pane-{title.lower()}"
-        self.panes[pid] = {"title": title, "app_name": title}
-        self._rebuild_grid()
-
     def remove_pane(self, pane_id: str) -> None:
         """Remove a pane from the desktop."""
         if pane_id in self.panes:
+            pane_info = self.panes[pane_id]
+            pane = pane_info["pane"]
+            # Remove the pane widget from its cell
+            pane.remove()
             del self.panes[pane_id]
-            self._rebuild_grid()
 
     def focus_pane_by_id(self, pane_id: str) -> None:
         """Focus a specific pane by ID, unfocus all others."""
-        # Unfocus all panes
-        grid = self.query_one("#pane-grid", Container)
-        for pane in grid.query(Pane):
-            pane.set_focused(False)
-        
-        # Focus the requested pane
-        for pane in grid.query(Pane):
-            if pane.pane_id == pane_id:
-                pane.set_focused(True)
-                self.active_pane_id = pane_id
-                break
+        # Unfocus all cells
+        for cell in self._cells:
+            cell.remove_class("focused")
+
+        # Focus the cell containing this pane
+        if pane_id in self.panes:
+            cell_idx = self.panes[pane_id]["cell"]
+            self._cells[cell_idx].add_class("focused")
+            self.active_pane_id = pane_id
 
 
 def main() -> None:

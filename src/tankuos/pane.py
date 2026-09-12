@@ -32,10 +32,11 @@ class Pane(Widget):
         self.title = title
         self.content_widget = content
         self._is_focused = False
+        self._titlebar = None
 
     def compose(self) -> ComposeResult:
-        titlebar = Static("", id="titlebar")
-        yield titlebar
+        self._titlebar = Static("", id="titlebar")
+        yield self._titlebar
         self.content_widget.add_class("pane-content")
         yield self.content_widget
 
@@ -63,12 +64,15 @@ class Pane(Widget):
             text.append(self.title, style="bold white on blue")
             text.append(" " * padding, style="on blue")
             text.append("[x]", style="bold red on blue")
-        titlebar = self.query_one("#titlebar", Static)
-        titlebar.update(text)
+        if self._titlebar is None:
+            try:
+                self._titlebar = self.query_one("#titlebar", Static)
+            except:
+                return
+        self._titlebar.update(text)
 
     def on_click(self, event):
         """Handle clicks on this widget."""
-        # Check if the click was on the titlebar
         x = event.x
         width = self.size.width or 80
         if x >= width - 4:
