@@ -3,6 +3,7 @@
 import curses
 import os
 import subprocess
+import signal
 from typing import Dict, List, Optional, Tuple
 
 
@@ -27,11 +28,9 @@ class Pane:
         self.h = h
 
     def add_content(self, text: str):
-        """Add text to the pane's content buffer."""
         lines = text.split('\n')
         self.content_lines.extend(lines)
-        # Auto-scroll to bottom if we have more lines than visible
-        visible_lines = self.h - 3  # minus titlebar and borders
+        visible_lines = max(1, self.h - 3)
         if len(self.content_lines) > visible_lines:
             self.scroll_offset = len(self.content_lines) - visible_lines
 
@@ -40,28 +39,24 @@ class Pane:
         self.scroll_offset = 0
 
     def draw(self, stdscr):
-        """Draw this pane on screen."""
         if self.w < 3 or self.h < 3:
             return
 
-        # Determine colors
         if self.focused:
-            title_color = curses.color_pair(3) | curses.A_BOLD  # green
-            border_color = curses.color_pair(4)  # accent
+            title_color = curses.color_pair(3) | curses.A_BOLD
+            border_color = curses.color_pair(4) | curses.A_BOLD
         else:
-            title_color = curses.color_pair(1) | curses.A_BOLD  # primary
-            border_color = curses.color_pair(1)  # primary
+            title_color = curses.color_pair(1) | curses.A_BOLD
+            border_color = curses.color_pair(1)
 
-        # Draw border
         try:
-            # Top border with title
+            # Top border
             stdscr.addch(self.y, self.x, '┌', border_color)
             title_text = f" {self.title} "
             title_x = self.x + 2
             for i, ch in enumerate(title_text):
                 if title_x + i < self.x + self.w - 1:
                     stdscr.addch(self.y, title_x + i, ch, title_color)
-            # Fill rest of top border
             title_end = title_x + len(title_text)
             for i in range(title_end, self.x + self.w - 1):
                 stdscr.addch(self.y, i, '─', border_color)
@@ -80,24 +75,25 @@ class Pane:
 
             # Clear content area
             for row in range(1, self.h - 1):
-                for col in range(1, self.w - 1):
-                    stdscr.addch(self.y + row, self.x + col, ' ')
+                line = ' ' * (self.w - 2)
+                try:
+                    stdscr.addstr(self.y + row, self.x + 1, line)
+                except curses.error:
+                    pass
 
             # Draw content
-            visible_lines = self.h - 3
+            visible_lines = max(1, self.h - 3)
             start = self.scroll_offset
             end = min(start + visible_lines, len(self.content_lines))
             for i, line_idx in enumerate(range(start, end)):
                 line = self.content_lines[line_idx]
-                # Truncate to fit
                 max_w = self.w - 2
                 if len(line) > max_w:
                     line = line[:max_w]
                 try:
-                    stdscr.addstr(self.y + 1 + (i - start), self.x + 1, line)
+                    stdscr.addstr(self.y + 1 + i, self.x + 1, line)
                 except curses.error:
                     pass
-
         except curses.error:
             pass
 
@@ -113,7 +109,6 @@ class ShellPane(Pane):
         self.add_content("$ ")
 
     def execute(self, command: str):
-        """Execute a shell command and capture output."""
         self.history.append(command)
         self.history_idx = len(self.history)
 
@@ -127,14 +122,19 @@ class ShellPane(Pane):
             return
 
         if command.strip() == "help":
-            self.add_content("Available commands: help, clear, ls, pwd, date, whoami, echo")
+            self.add_content("Commands: help, clear, ls, pwd, date, whoami, echo")
             self.add_content("$ ")
             return
 
         try:
-            # Save curses state, leave curses mode, run command, restore state
             curses.def_prog_mode()
             curses.endwin()
+            try:
+                curses.nocbreak()
+                curses.echo()
+                curses.nl(True)
+            except:
+                pass
 
             result = subprocess.run(
                 command,
@@ -148,15 +148,32 @@ class ShellPane(Pane):
             if output.strip():
                 self.add_content(output.rstrip())
 
-            # Restore curses mode
+            try:
+                curses.nonl()
+                curses.noecho()
+                curses.cbreak()
+            except:
+                pass
             curses.reset_prog_mode()
             curses.doupdate()
         except subprocess.TimeoutExpired:
             self.add_content("Command timed out")
+            try:
+                curses.nonl()
+                curses.noecho()
+                curses.cbreak()
+            except:
+                pass
             curses.reset_prog_mode()
             curses.doupdate()
         except Exception as e:
             self.add_content(f"Error: {e}")
+            try:
+                curses.nonl()
+                curses.noecho()
+                curses.cbreak()
+            except:
+                pass
             curses.reset_prog_mode()
             curses.doupdate()
 
@@ -165,19 +182,15 @@ class ShellPane(Pane):
     def backspace(self):
         if self.input_buffer:
             self.input_buffer = self.input_buffer[:-1]
-            # Redraw input line
             self._redraw_input()
 
     def _redraw_input(self):
-        """Redraw the current input line."""
-        # Remove last line (the current $ prompt) and redraw
         if self.content_lines and self.content_lines[-1].startswith("$ "):
             self.content_lines.pop()
         self.add_content(f"$ {self.input_buffer}")
 
     def add_char(self, ch: str):
         self.input_buffer += ch
-        # Update last line
         if self.content_lines and self.content_lines[-1].startswith("$ "):
             self.content_lines[-1] = f"$ {self.input_buffer}"
         else:
@@ -197,17 +210,17 @@ class TankuOS:
         self.pane_order: List[str] = []
         self.active_pane_id: Optional[str] = None
         self.next_id = 0
-        self.menubar_items = ["TankuOS", "View", "Apps", "Help"]
-        self.active_menu = -1
         self.stdscr = None
         self.running = False
+        # Menu state machine
+        self.menu_active = False  # True when a menu overlay is showing
+        self.menu_type = None     # 'apps', 'help', or None
+        self.menu_selection = 0
+        self.apps = ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]
 
     def init_colors(self):
-        """Initialize color pairs."""
         curses.start_color()
         curses.use_default_colors()
-
-        # Color pairs
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)    # primary
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLUE)   # accent
         curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_GREEN)   # focused title
@@ -216,27 +229,13 @@ class TankuOS:
         curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)   # statusbar
 
     def launch_app(self, app_name: str):
-        """Launch an app in a new pane."""
         pane_id = f"pane-{self.next_id}"
         self.next_id += 1
 
-        # Calculate layout
-        self._calculate_layout()
-
-        # Create pane
         if app_name == "Shell":
-            # Find position for new pane
-            idx = len(self.panes)
-            max_panes = self._max_panes()
-            if idx >= max_panes:
-                return  # No room
-
-            # Get geometry from layout
-            x, y, w, h = self._pane_geometry(idx)
-            pane = ShellPane(pane_id, x, y, w, h)
+            pane = ShellPane(pane_id, 0, 0, 10, 10)
         else:
-            x, y, w, h = self._pane_geometry(len(self.panes))
-            pane = Pane(pane_id, app_name, x, y, w, h)
+            pane = Pane(pane_id, app_name, 0, 0, 10, 10)
             pane.add_content(f"{app_name}")
             pane.add_content("")
             pane.add_content("[Plugin content goes here]")
@@ -244,10 +243,11 @@ class TankuOS:
         self.panes[pane_id] = pane
         self.pane_order.append(pane_id)
         self.active_pane_id = pane_id
+
+        self._calculate_layout()
         self._update_focus()
 
     def close_pane(self, pane_id: str):
-        """Close a pane."""
         if pane_id in self.panes:
             del self.panes[pane_id]
             self.pane_order.remove(pane_id)
@@ -256,18 +256,7 @@ class TankuOS:
             self._calculate_layout()
             self._update_focus()
 
-    def _max_panes(self) -> int:
-        """Max panes based on screen size."""
-        if not self.stdscr:
-            return 3
-        h, w = self.stdscr.getmaxyx()
-        # Each pane needs at least 20 cols and 10 rows
-        max_cols = max(1, (w - 4) // 40)
-        max_rows = max(1, (h - 4) // 12)
-        return min(max_cols * max_rows, 6)
-
-    def _pane_geometry(self, idx: int) -> Tuple[int, int, int, int]:
-        """Calculate geometry for pane at given index."""
+    def _pane_geometry(self, idx: int, total: int) -> Tuple[int, int, int, int]:
         if not self.stdscr:
             return (0, 0, 80, 24)
 
@@ -278,56 +267,53 @@ class TankuOS:
         grid_h = h - menubar_h - statusbar_h
         grid_w = w
 
-        n = len(self.panes) + (1 if idx >= len(self.panes) else 0)
-        if n == 0:
-            n = 1
+        if total == 0:
+            total = 1
 
-        # Simple layout: divide horizontally
-        cols = min(n, 3)
-        rows = (n + cols - 1) // cols
+        cols = min(total, 3)
+        rows = (total + cols - 1) // cols
 
         cell_w = grid_w // cols
         cell_h = grid_h // rows
+
+        # Distribute remainder pixels to last column/row
+        rem_w = grid_w - (cell_w * cols)
+        rem_h = grid_h - (cell_h * rows)
 
         col = idx % cols
         row = idx // cols
 
         x = col * cell_w
         y = grid_top + row * cell_h
-        pw = cell_w
-        ph = cell_h
+        pw = cell_w + (rem_w if col == cols - 1 else 0)
+        ph = cell_h + (rem_h if row == rows - 1 else 0)
 
         return (x, y, pw, ph)
 
     def _calculate_layout(self):
-        """Recalculate pane geometries."""
+        total = len(self.pane_order)
         for i, pane_id in enumerate(self.pane_order):
             pane = self.panes[pane_id]
-            x, y, w, h = self._pane_geometry(i)
+            x, y, w, h = self._pane_geometry(i, total)
             pane.resize(x, y, w, h)
 
     def _update_focus(self):
-        """Update focus state of all panes."""
         for pane_id, pane in self.panes.items():
             pane.focused = (pane_id == self.active_pane_id)
 
     def draw_menubar(self):
-        """Draw the menubar."""
         if not self.stdscr:
             return
         h, w = self.stdscr.getmaxyx()
         try:
-            # Clear menubar line
-            for col in range(w):
-                self.stdscr.addch(0, col, ' ', curses.color_pair(1))
+            line = ' ' * w
+            self.stdscr.addstr(0, 0, line, curses.color_pair(1))
 
             x = 1
-            for i, item in enumerate(self.menubar_items):
+            items = ["TankuOS", "View", "Apps", "Help"]
+            for i, item in enumerate(items):
                 text = f" {item} "
-                if i == self.active_menu:
-                    attr = curses.color_pair(5) | curses.A_BOLD
-                else:
-                    attr = curses.color_pair(1) | curses.A_BOLD
+                attr = curses.color_pair(1) | curses.A_BOLD
                 try:
                     self.stdscr.addstr(0, x, text, attr)
                 except curses.error:
@@ -337,51 +323,146 @@ class TankuOS:
             pass
 
     def draw_statusbar(self):
-        """Draw the statusbar."""
         if not self.stdscr:
             return
         h, w = self.stdscr.getmaxyx()
         try:
             y = h - 1
-            for col in range(w):
-                self.stdscr.addch(y, col, ' ', curses.color_pair(6))
-            status = " F1 Help | F2 Theme | F3 Apps | Ctrl+Q Quit"
+            line = ' ' * w
+            self.stdscr.addstr(y, 0, line, curses.color_pair(6))
+            active = self.active_pane_id or "none"
+            status = f" F1 Help | F3 Apps | Tab: cycle | Active: {active} | 'q' or Ctrl+Q: Quit"
             self.stdscr.addstr(y, 0, status[:w-1], curses.color_pair(6))
         except curses.error:
             pass
 
     def draw(self):
-        """Draw the entire desktop."""
         if not self.stdscr:
             return
 
         self.stdscr.erase()
         h, w = self.stdscr.getmaxyx()
 
-        # Draw menubar
         self.draw_menubar()
-
-        # Draw statusbar
         self.draw_statusbar()
 
-        # Draw panes
         for pane_id in self.pane_order:
             self.panes[pane_id].draw(self.stdscr)
 
+        # Draw menu overlay if active
+        if self.menu_active:
+            if self.menu_type == 'apps':
+                self._draw_apps_menu()
+            elif self.menu_type == 'help':
+                self._draw_help_menu()
+
         self.stdscr.refresh()
 
+    def _draw_apps_menu(self):
+        """Draw apps menu as overlay."""
+        if not self.stdscr:
+            return
+        h, w = self.stdscr.getmaxyx()
+        max_w = 24
+        max_h = len(self.apps) + 4
+        start_y = max(1, (h - max_h) // 2)
+        start_x = max(0, (w - max_w) // 2)
+
+        for row in range(max_h):
+            for col in range(max_w):
+                y = start_y + row
+                x = start_x + col
+                if 0 <= y < h and 0 <= x < w:
+                    if row == 0 or row == max_h - 1:
+                        self.stdscr.addch(y, x, '─', curses.color_pair(1))
+                    elif col == 0 or col == max_w - 1:
+                        self.stdscr.addch(y, x, '│', curses.color_pair(1))
+                    else:
+                        self.stdscr.addch(y, x, ' ')
+
+        if start_y < h and start_x < w:
+            self.stdscr.addch(start_y, start_x, '┌', curses.color_pair(1))
+        if start_y < h and start_x + max_w - 1 < w:
+            self.stdscr.addch(start_y, start_x + max_w - 1, '┐', curses.color_pair(1))
+        if start_y + max_h - 1 < h and start_x < w:
+            self.stdscr.addch(start_y + max_h - 1, start_x, '└', curses.color_pair(1))
+        if start_y + max_h - 1 < h and start_x + max_w - 1 < w:
+            self.stdscr.addch(start_y + max_h - 1, start_x + max_w - 1, '┘', curses.color_pair(1))
+
+        title = " Applications "
+        if start_y + 1 < h:
+            self.stdscr.addstr(start_y + 1, start_x + 2, title, curses.A_BOLD)
+
+        for i, app in enumerate(self.apps):
+            y = start_y + 3 + i
+            x = start_x + 2
+            if 0 <= y < h and 0 <= x < w:
+                attr = curses.color_pair(5) | curses.A_BOLD if i == self.menu_selection else curses.A_NORMAL
+                try:
+                    self.stdscr.addstr(y, x, f" {app:<20}", attr)
+                except curses.error:
+                    pass
+
+    def _draw_help_menu(self):
+        """Draw help as overlay."""
+        if not self.stdscr:
+            return
+        h, w = self.stdscr.getmaxyx()
+        help_text = [
+            "TankuOS Help",
+            "",
+            "F1      - This help",
+            "F3      - Apps menu",
+            "Tab     - Cycle panes",
+            "'q'     - Quit",
+            "",
+            "Press any key to close..."
+        ]
+        max_w = max(len(line) for line in help_text) + 4
+        max_h = len(help_text) + 4
+        start_y = max(1, (h - max_h) // 2)
+        start_x = max(0, (w - max_w) // 2)
+
+        for row in range(max_h):
+            for col in range(max_w):
+                y = start_y + row
+                x = start_x + col
+                if 0 <= y < h and 0 <= x < w:
+                    if row == 0 or row == max_h - 1:
+                        self.stdscr.addch(y, x, '─', curses.color_pair(1))
+                    elif col == 0 or col == max_w - 1:
+                        self.stdscr.addch(y, x, '│', curses.color_pair(1))
+                    else:
+                        self.stdscr.addch(y, x, ' ')
+
+        if start_y < h and start_x < w:
+            self.stdscr.addch(start_y, start_x, '┌', curses.color_pair(1))
+        if start_y < h and start_x + max_w - 1 < w:
+            self.stdscr.addch(start_y, start_x + max_w - 1, '┐', curses.color_pair(1))
+        if start_y + max_h - 1 < h and start_x < w:
+            self.stdscr.addch(start_y + max_h - 1, start_x, '└', curses.color_pair(1))
+        if start_y + max_h - 1 < h and start_x + max_w - 1 < w:
+            self.stdscr.addch(start_y + max_h - 1, start_x + max_w - 1, '┘', curses.color_pair(1))
+
+        for i, line in enumerate(help_text):
+            y = start_y + 2 + i
+            x = start_x + 2
+            if 0 <= y < h and 0 <= x < w:
+                try:
+                    self.stdscr.addstr(y, x, line[:max_w-4], curses.A_BOLD if i == 0 else curses.A_NORMAL)
+                except curses.error:
+                    pass
+
     def run(self, stdscr):
-        """Main run loop."""
         self.stdscr = stdscr
-        curses.curs_set(0)  # Hide cursor
+        curses.curs_set(0)
         self.init_colors()
         stdscr.keypad(True)
-        stdscr.nodelay(True)  # Non-blocking input
+        stdscr.nodelay(True)
 
         self.running = True
-        dirty = True  # Track if screen needs redraw
+        dirty = True
 
-        # Launch initial shell
         self.launch_app("Shell")
 
         while self.running:
@@ -395,53 +476,73 @@ class TankuOS:
                 ch = -1
 
             if ch == -1:
-                # No input, sleep to avoid busy loop
-                curses.napms(30)
+                curses.napms(50)
                 continue
 
-            dirty = True  # Mark screen as needing redraw
+            dirty = True
 
-            # Handle keypress
-            if ch == curses.KEY_RESIZE:
-                self._calculate_layout()
-                continue
-
-            if ch == ord('q') - ord('a') + 1:  # Ctrl+Q
+            # Always handle quit first
+            if ch == ord('q') or ch == ord('Q'):
                 self.running = False
                 continue
 
+            if ch == curses.KEY_RESIZE:
+                self.calculate_layout()
+                continue
+
+            # Handle menu state
+            if self.menu_active:
+                if ch == 27:  # Escape closes menu
+                    self.menu_active = False
+                    self.menu_type = None
+                elif ch == curses.KEY_UP:
+                    self.menu_selection = (self.menu_selection - 1) % len(self.apps)
+                elif ch == curses.KEY_DOWN:
+                    self.menu_selection = (self.menu_selection + 1) % len(self.apps)
+                elif ch == 10 or ch == 13:  # Enter
+                    if self.menu_type == 'apps':
+                        self.launch_app(self.apps[self.menu_selection])
+                    self.menu_active = False
+                    self.menu_type = None
+                elif self.menu_type == 'help':
+                    # Any key closes help
+                    self.menu_active = False
+                    self.menu_type = None
+                continue
+
+            # Main keybinds
             if ch == curses.KEY_F1:
-                self.show_help()
+                self.menu_active = True
+                self.menu_type = 'help'
                 continue
 
             if ch == curses.KEY_F3:
-                self.show_apps()
+                self.menu_active = True
+                self.menu_type = 'apps'
+                self.menu_selection = 0
                 continue
 
-            if ch == 9:  # Tab - cycle panes
+            if ch == 9:  # Tab
                 self.cycle_pane()
                 continue
 
             if ch == 27:  # Escape
-                self.active_menu = -1
                 continue
 
-            # Pass to active pane if it's a ShellPane
+            # Pass to active ShellPane
             if self.active_pane_id and self.active_pane_id in self.panes:
                 pane = self.panes[self.active_pane_id]
                 if isinstance(pane, ShellPane):
-                    if ch == 10 or ch == 13:  # Enter
+                    if ch == 10 or ch == 13:
                         pane.submit()
                     elif ch == curses.KEY_BACKSPACE or ch == 127:
                         pane.backspace()
                     elif ch == curses.KEY_UP:
-                        # History up
                         if pane.history and pane.history_idx > 0:
                             pane.history_idx -= 1
                             pane.input_buffer = pane.history[pane.history_idx]
                             pane._redraw_input()
                     elif ch == curses.KEY_DOWN:
-                        # History down
                         if pane.history and pane.history_idx < len(pane.history) - 1:
                             pane.history_idx += 1
                             pane.input_buffer = pane.history[pane.history_idx]
@@ -453,8 +554,11 @@ class TankuOS:
                     elif 32 <= ch < 127:
                         pane.add_char(chr(ch))
 
+    def calculate_layout(self):
+        """Alias for _calculate_layout for external access."""
+        self._calculate_layout()
+
     def cycle_pane(self):
-        """Cycle focus to next pane."""
         if not self.pane_order:
             return
         if self.active_pane_id is None:
@@ -465,134 +569,8 @@ class TankuOS:
             self.active_pane_id = self.pane_order[idx]
         self._update_focus()
 
-    def show_help(self):
-        """Show help overlay."""
-        if not self.stdscr:
-            return
-        h, w = self.stdscr.getmaxyx()
-        help_text = [
-            "TankuOS Help",
-            "",
-            "F1      - This help",
-            "F2      - Cycle theme",
-            "F3      - Apps menu",
-            "Tab     - Cycle panes",
-            "Ctrl+Q  - Quit",
-            "",
-            "Press any key to close..."
-        ]
-        # Simple popup
-        max_w = max(len(line) for line in help_text) + 4
-        max_h = len(help_text) + 4
-        start_y = (h - max_h) // 2
-        start_x = (w - max_w) // 2
-
-        # Draw box
-        for row in range(max_h):
-            for col in range(max_w):
-                y = start_y + row
-                x = start_x + col
-                if 0 <= y < h and 0 <= x < w:
-                    if row == 0 or row == max_h - 1:
-                        self.stdscr.addch(y, x, '─', curses.color_pair(1))
-                    elif col == 0 or col == max_w - 1:
-                        self.stdscr.addch(y, x, '│', curses.color_pair(1))
-                    else:
-                        self.stdscr.addch(y, x, ' ')
-
-        # Corners
-        self.stdscr.addch(start_y, start_x, '┌', curses.color_pair(1))
-        self.stdscr.addch(start_y, start_x + max_w - 1, '┐', curses.color_pair(1))
-        self.stdscr.addch(start_y + max_h - 1, start_x, '└', curses.color_pair(1))
-        self.stdscr.addch(start_y + max_h - 1, start_x + max_w - 1, '┘', curses.color_pair(1))
-
-        # Text
-        for i, line in enumerate(help_text):
-            y = start_y + 2 + i
-            x = start_x + 2
-            if 0 <= y < h and 0 <= x < w:
-                try:
-                    self.stdscr.addstr(y, x, line[:max_w-4], curses.A_BOLD if i == 0 else curses.A_NORMAL)
-                except curses.error:
-                    pass
-
-        self.stdscr.refresh()
-        self.stdscr.getch()
-
-    def show_apps(self):
-        """Show apps menu."""
-        if not self.stdscr:
-            return
-        h, w = self.stdscr.getmaxyx()
-        apps = ["Shell", "Retirement", "Monster", "MontcoMonitor", "Glances"]
-        max_w = 24
-        max_h = len(apps) + 4
-        start_y = (h - max_h) // 2
-        start_x = (w - max_w) // 2
-
-        # Draw box
-        for row in range(max_h):
-            for col in range(max_w):
-                y = start_y + row
-                x = start_x + col
-                if 0 <= y < h and 0 <= x < w:
-                    if row == 0 or row == max_h - 1:
-                        self.stdscr.addch(y, x, '─', curses.color_pair(1))
-                    elif col == 0 or col == max_w - 1:
-                        self.stdscr.addch(y, x, '│', curses.color_pair(1))
-                    else:
-                        self.stdscr.addch(y, x, ' ')
-
-        self.stdscr.addch(start_y, start_x, '┌', curses.color_pair(1))
-        self.stdscr.addch(start_y, start_x + max_w - 1, '┐', curses.color_pair(1))
-        self.stdscr.addch(start_y + max_h - 1, start_x, '└', curses.color_pair(1))
-        self.stdscr.addch(start_y + max_h - 1, start_x + max_w - 1, '┘', curses.color_pair(1))
-
-        # Title
-        title = " Applications "
-        self.stdscr.addstr(start_y + 1, start_x + 2, title, curses.A_BOLD)
-
-        # Apps
-        for i, app in enumerate(apps):
-            y = start_y + 3 + i
-            x = start_x + 2
-            if 0 <= y < h and 0 <= x < w:
-                try:
-                    self.stdscr.addstr(y, x, f" {app:<20}")
-                except curses.error:
-                    pass
-
-        self.stdscr.refresh()
-
-        # Simple selection
-        selected = 0
-        while True:
-            # Redraw selection
-            for i, app in enumerate(apps):
-                y = start_y + 3 + i
-                x = start_x + 2
-                if 0 <= y < h and 0 <= x < w:
-                    attr = curses.color_pair(5) | curses.A_BOLD if i == selected else curses.A_NORMAL
-                    try:
-                        self.stdscr.addstr(y, x, f" {app:<20}", attr)
-                    except curses.error:
-                        pass
-            self.stdscr.refresh()
-
-            ch = self.stdscr.getch()
-            if ch == 27:  # Escape
-                return
-            elif ch == curses.KEY_UP:
-                selected = (selected - 1) % len(apps)
-            elif ch == curses.KEY_DOWN:
-                selected = (selected + 1) % len(apps)
-            elif ch == 10 or ch == 13:  # Enter
-                self.launch_app(apps[selected])
-                return
-
 
 def main():
-    """Entry point."""
     app = TankuOS()
     curses.wrapper(app.run)
 
