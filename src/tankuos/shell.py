@@ -202,14 +202,12 @@ class Shell(App):
     #pane-grid {
         height: 1fr;
         padding: 0;
-    }
-
-    #pane-grid > Horizontal {
-        height: 1fr;
+        layout: grid;
+        grid-size: 3 1;
+        grid-gutter: 1;
     }
 
     .pane-cell {
-        width: 1fr;
         height: 1fr;
         border: solid $primary;
     }
@@ -253,13 +251,11 @@ class Shell(App):
 
             with Container(id="workspace"):
                 with Container(id="pane-grid") as self._grid:
-                    # Create a single row with fixed cells
-                    row = Horizontal()
-                    yield row
+                    # Yield cells as direct children of the grid (CSS grid layout)
                     for i in range(self.MAX_CELLS):
                         cell = Container(classes="pane-cell cell-empty", id=f"cell-{i}")
                         self._cells.append(cell)
-                        row.mount(cell)
+                        yield cell
 
             with Horizontal(id="statusbar"):
                 yield Static(" F1 Help")
@@ -348,8 +344,6 @@ class Shell(App):
         self.panes[pane_id] = {"title": app_name, "pane": pane, "cell": cell_idx}
         self._cells[cell_idx].mount(pane)
         self._cells[cell_idx].remove_class("cell-empty")
-        # Force layout refresh
-        self.refresh(layout=True)
         self.notify(f"Launched: {app_name}")
 
     def _find_empty_cell(self) -> Optional[int]:
