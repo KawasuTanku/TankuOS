@@ -89,11 +89,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Both macOS targets build on the Apple-Silicon runner: it has the
-          # x86_64 SDK, so it cross-compiles the Intel binary without depending
-          # on the heavily-backlogged macos-13 (Intel) runner.
-          - { os: macos-14, target: aarch64-apple-darwin }
-          - { os: macos-14, target: x86_64-apple-darwin }
           # Linux builds run on 22.04 ON PURPOSE: its glibc 2.35 keeps the
           # binaries runnable on Debian 12 (glibc 2.36) and Ubuntu 22.04+ —
           # ubuntu-latest (24.04, glibc 2.39) produced binaries that died on
