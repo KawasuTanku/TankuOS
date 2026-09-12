@@ -114,7 +114,7 @@ impl Launcher {
         }
     }
 
-    /// Build the cascade root: one Submenu per category (sorted, "tuiui" first),
+    /// Build the cascade root: one Submenu per category (sorted, "TankuOS" first),
     /// apps inside (sorted by name).
     fn rebuild_menu(&mut self) {
         use std::collections::BTreeMap;
@@ -122,7 +122,7 @@ impl Launcher {
         for a in &self.items {
             by_cat.entry(cat_of(a)).or_default().push(a.clone());
         }
-        let rank = |c: &str| if c == "tuiui" { 0 } else { 1 };
+        let rank = |c: &str| if c == "TankuOS" { 0 } else { 1 };
         let mut cats: Vec<(String, Vec<AppEntry>)> = by_cat.into_iter().collect();
         cats.sort_by(|(a, _), (b, _)| rank(a).cmp(&rank(b)).then_with(|| a.cmp(b)));
         // A bare "Shell" quick-launch is the very first top-level entry (one click,
@@ -305,8 +305,8 @@ impl Launcher {
         };
         v.sort_by(|a, b| {
             let (ca, cb) = (cat_of(a), cat_of(b));
-            // Pin the "tuiui" section (Store/Settings) to the very top.
-            let rank = |c: &str| if c == "tuiui" { 0 } else { 1 };
+            // Pin the "TankuOS" section (Store/Settings) to the very top.
+            let rank = |c: &str| if c == "TankuOS" { 0 } else { 1 };
             rank(&ca)
                 .cmp(&rank(&cb))
                 .then_with(|| ca.cmp(&cb))

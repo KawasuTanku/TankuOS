@@ -20,7 +20,7 @@ pub enum PowerAction {
     Exit,
     /// Reload the frontend (restart the UI) while apps keep running in the apphost.
     Restart,
-    /// Stop tuiui entirely (daemon exits, every app is killed).
+    /// Stop TankuOS entirely (daemon exits, every app is killed).
     Shutdown,
 }
 
@@ -611,7 +611,7 @@ impl PowerMenu {
             for x in 0..d.w {
                 buf.set(x, 0, Cell { ch: ' ', fg: t.title_fg, bg: t.title_focus, attrs: Default::default() });
             }
-            buf.write_str(2, 0, " tuiui ", t.title_fg, t.title_focus);
+            buf.write_str(2, 0, " TankuOS ", t.title_fg, t.title_focus);
             // Border.
             let b = |ch: char| Cell { ch, fg: t.border, bg: t.window_bg, attrs: Default::default() };
             for y in 1..d.h {
@@ -625,9 +625,9 @@ impl PowerMenu {
             buf.set(d.w - 1, d.h - 1, b('╯'));
             // Message + confirm-button label.
             let (msg, confirm_label) = match action {
-                PowerAction::Exit => ("Exit tuiui? Apps keep running in the background.", "Exit"),
-                PowerAction::Restart => ("Restart tuiui? The UI reloads; your apps keep running.", "Restart"),
-                PowerAction::Shutdown => ("Shut down tuiui? All running apps will close.", "Shut Down"),
+                PowerAction::Exit => ("Exit TankuOS? Apps keep running in the background.", "Exit"),
+                PowerAction::Restart => ("Restart TankuOS? The UI reloads; your apps keep running.", "Restart"),
+                PowerAction::Shutdown => ("Shut down TankuOS? All running apps will close.", "Shut Down"),
             };
             buf.write_str(2, 2, msg, t.text, t.window_bg);
             // Buttons (local coords; pad the labels to fill their hit rects).
@@ -647,7 +647,7 @@ impl PowerMenu {
             for x in 0..d.w {
                 buf.set(x, 0, Cell { ch: ' ', fg: t.title_fg, bg: t.title_focus, attrs: Default::default() });
             }
-            buf.write_str(2, 0, " tuiui ", t.title_fg, t.title_focus);
+            buf.write_str(2, 0, " TankuOS ", t.title_fg, t.title_focus);
             // Border.
             let b = |ch: char| Cell { ch, fg: t.border, bg: t.window_bg, attrs: Default::default() };
             for y in 1..d.h {

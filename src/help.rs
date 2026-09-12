@@ -67,7 +67,7 @@ pub fn render_help(w: i32, h: i32) -> Vec<Layer> {
     }
     lines.push((String::new(), false));
     lines.push(("In overlays:  ↑↓ move · →← expand · Enter open · Esc cancel".into(), false));
-    lines.push(("Menubar:  tuiui = launcher · ⊞/▦ = view · ✦ = assistant · host ▾ = power/Systems".into(), false));
+    lines.push(("Menubar:  tankuos = launcher · ⊞/▦ = view · ✦ = assistant · host ▾ = power/Systems".into(), false));
     lines.push((String::new(), false));
     lines.push(("Press any key to close".into(), false));
 
@@ -82,7 +82,7 @@ pub fn render_help(w: i32, h: i32) -> Vec<Layer> {
     for x in 0..box_w {
         buf.set(x, 0, Cell { ch: ' ', fg: t.title_fg, bg: t.title_focus, attrs: Default::default() });
     }
-    buf.write_str(2, 0, " tuiui — keyboard shortcuts ", t.title_fg, t.title_focus);
+    buf.write_str(2, 0, " tankuos — keyboard shortcuts ", t.title_fg, t.title_focus);
     let b = |ch: char| Cell { ch, fg: t.border, bg: t.window_bg, attrs: Default::default() };
     for y in 1..box_h {
         buf.set(0, y, b('│'));

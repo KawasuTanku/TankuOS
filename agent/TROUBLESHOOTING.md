@@ -1,11 +1,11 @@
-# Troubleshooting & fixing tuiui
+# Troubleshooting & fixing tankuos
 
 ## First stop: the log
 
 `~/tuiui-debug.log` — always on, timestamped (ms since epoch), capped at 4MB.
 Every subsystem traces here: app launches, installs, ssh/scp transfers,
 system switches, notifications, theme changes. `tail -100` it before
-theorising. The user can also open it in-app (launcher → tuiui → Logs) and
+theorising. The user can also open it in-app (launcher → tankuos → Logs) and
 copy it to their clipboard with `c`.
 
 ## Common problems
@@ -18,19 +18,19 @@ copy it to their clipboard with `c`.
   shell window and follow their docs. The Store's detail pane shows a setup
   tip for these apps.
 - **Garbled rendering**: ask the user to resize the terminal once (forces a
-  full re-baseline) or run `tuiui reload`. If it persists, collect the log.
+  full re-baseline) or run `tankuos reload`. If it persists, collect the log.
 - **Remote system unreachable**: check the Systems menu dot, then
   `ssh -o BatchMode=yes <target> true`; "Permission denied" means the key
   isn't installed — re-run Systems → Add Remote.
 - **Mouse doesn't work on a bare Linux console**: gpm must be running
   (`sudo systemctl enable --now gpm`).
 
-## Fixing tuiui itself
+## Fixing tankuos itself
 
 The source is at {{REPO}}. To fix a bug:
 
 ```sh
-git clone {{REPO}} && cd tuiui
+git clone {{REPO}} && cd tankuos
 cargo build          # build
 cargo test           # 300+ tests must stay green
 ```

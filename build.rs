@@ -11,6 +11,6 @@ fn main() {
         .filter(|o| o.status.success())
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
         .unwrap_or_else(|| "unknown".to_string());
-    println!("cargo:rustc-env=TUIUI_GIT_SHA={sha}");
+    println!("cargo:rustc-env=TANKUOS_GIT_SHA={sha}");
     println!("cargo:rerun-if-changed=.git/HEAD");
 }

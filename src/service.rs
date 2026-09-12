@@ -1,14 +1,14 @@
-//! Install `tuiui --apphost` as a per-user service (launchd / systemd --user /
+//! Install `tankuos --apphost` as a per-user service (launchd / systemd --user /
 //! ~/.profile fallback) so the app host auto-starts and restarts on crash.
 
 use std::io;
 use std::path::PathBuf;
 use std::process::Command;
 
-const LAUNCHD_LABEL: &str = "co.uk.janlabs.tuiui-apphost";
-const SYSTEMD_UNIT: &str = "tuiui-apphost.service";
-const PROFILE_START: &str = "# >>> tuiui apphost >>>";
-const PROFILE_END: &str = "# <<< tuiui apphost <<<";
+const LAUNCHD_LABEL: &str = "co.uk.janlabs.tankuos-apphost";
+const SYSTEMD_UNIT: &str = "tankuos-apphost.service";
+const PROFILE_START: &str = "# >>> tankuos apphost >>>";
+const PROFILE_END: &str = "# <<< tankuos apphost <<<";
 
 /// Which backend this platform uses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,7 +64,7 @@ pub fn systemd_unit(exe: &str, env: &[(String, String)]) -> String {
         env_lines.push_str(&format!("Environment={k}={v}\n"));
     }
     format!(
-        "[Unit]\nDescription=tuiui apphost (keeps your terminal apps alive)\nAfter=default.target\n\n\
+        "[Unit]\nDescription=tankuos apphost (keeps your terminal apps alive)\nAfter=default.target\n\n\
 [Service]\nType=simple\nExecStart={exe} --apphost\nRestart=on-failure\nRestartSec=2\n{env_lines}\n\
 [Install]\nWantedBy=default.target\n"
     )
@@ -74,7 +74,7 @@ pub fn systemd_unit(exe: &str, env: &[(String, String)]) -> String {
 pub fn profile_block(exe: &str, sock: &str) -> String {
     format!(
         "{PROFILE_START}\n\
-# Auto-start the tuiui apphost in the background (no systemd available).\n\
+# Auto-start the tankuos apphost in the background (no systemd available).\n\
 if command -v {exe} >/dev/null 2>&1 && [ ! -S \"{sock}\" ]; then\n  \
 ( {exe} --apphost >/dev/null 2>&1 & )\nfi\n\
 {PROFILE_END}\n"
@@ -152,7 +152,7 @@ pub fn install() -> io::Result<()> {
                 // Older macOS fallback.
                 let _ = Command::new("launchctl").args(["load", "-w", &ps]).status();
             }
-            println!("tuiui: apphost service installed (launchd: {LAUNCHD_LABEL}).");
+            println!("tankuos: apphost service installed (launchd: {LAUNCHD_LABEL}).");
             Ok(())
         }
         Backend::Systemd => {
@@ -168,10 +168,10 @@ pub fn install() -> io::Result<()> {
                 .args(["--user", "enable", "--now", SYSTEMD_UNIT])
                 .status()?;
             if !st.success() {
-                eprintln!("tuiui: `systemctl --user enable --now {SYSTEMD_UNIT}` failed.");
+                eprintln!("tankuos: `systemctl --user enable --now {SYSTEMD_UNIT}` failed.");
             }
-            println!("tuiui: apphost service installed (systemd --user: {SYSTEMD_UNIT}).");
-            println!("tuiui: tip — `loginctl enable-linger $USER` keeps it running across logout.");
+            println!("tankuos: apphost service installed (systemd --user: {SYSTEMD_UNIT}).");
+            println!("tankuos: tip — `loginctl enable-linger $USER` keeps it running across logout.");
             Ok(())
         }
         Backend::Profile => {
@@ -189,13 +189,13 @@ pub fn install() -> io::Result<()> {
             // Start it now too (best-effort).
             let _ = Command::new(&exe).arg("--apphost").spawn();
             println!(
-                "tuiui: apphost auto-start added to {} (no systemd detected).",
+                "tankuos: apphost auto-start added to {} (no systemd detected).",
                 path.display()
             );
             Ok(())
         }
         Backend::Unsupported => {
-            eprintln!("tuiui: service install is not supported on this platform.");
+            eprintln!("tankuos: service install is not supported on this platform.");
             Ok(())
         }
     }
@@ -212,7 +212,7 @@ pub fn uninstall() -> io::Result<()> {
                     .status();
                 let _ = std::fs::remove_file(&path);
             }
-            println!("tuiui: apphost service removed (launchd).");
+            println!("tankuos: apphost service removed (launchd).");
             Ok(())
         }
         Backend::Systemd => {
@@ -225,7 +225,7 @@ pub fn uninstall() -> io::Result<()> {
             let _ = Command::new("systemctl")
                 .args(["--user", "daemon-reload"])
                 .status();
-            println!("tuiui: apphost service removed (systemd --user).");
+            println!("tankuos: apphost service removed (systemd --user).");
             Ok(())
         }
         Backend::Profile => {
@@ -234,7 +234,7 @@ pub fn uninstall() -> io::Result<()> {
                     std::fs::write(&path, strip_profile_block(&text))?;
                 }
             }
-            println!("tuiui: apphost auto-start removed from ~/.profile.");
+            println!("tankuos: apphost auto-start removed from ~/.profile.");
             Ok(())
         }
         Backend::Unsupported => Ok(()),
@@ -289,7 +289,7 @@ pub fn ensure_started() -> bool {
 pub fn status() -> io::Result<()> {
     let running =
         std::os::unix::net::UnixStream::connect(crate::protocol::apphost_socket_path()).is_ok();
-    println!("tuiui apphost service:");
+    println!("tankuos apphost service:");
     println!("  backend:  {:?}", backend());
     println!(
         "  running:  {}",
@@ -327,7 +327,7 @@ pub fn status() -> io::Result<()> {
     Ok(())
 }
 
-/// Remove the guarded tuiui block from profile text (idempotent).
+/// Remove the guarded tankuos block from profile text (idempotent).
 fn strip_profile_block(text: &str) -> String {
     let mut out = String::new();
     let mut skipping = false;
@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn launchd_plist_has_apphost_keepalive_and_env() {
-        let p = launchd_plist(LAUNCHD_LABEL, "/usr/local/bin/tuiui", &env());
+        let p = launchd_plist(LAUNCHD_LABEL, "/usr/local/bin/tankuos", &env());
         assert!(p.contains("<string>--apphost</string>"));
         assert!(p.contains(LAUNCHD_LABEL));
         assert!(p.contains("<key>RunAtLoad</key><true/>"));
@@ -370,8 +370,8 @@ mod tests {
 
     #[test]
     fn systemd_unit_has_execstart_restart_and_env() {
-        let u = systemd_unit("/usr/local/bin/tuiui", &env());
-        assert!(u.contains("ExecStart=/usr/local/bin/tuiui --apphost"));
+        let u = systemd_unit("/usr/local/bin/tankuos", &env());
+        assert!(u.contains("ExecStart=/usr/local/bin/tankuos --apphost"));
         assert!(u.contains("Restart=on-failure"));
         assert!(u.contains("Environment=PATH=/usr/bin:/bin"));
         assert!(u.contains("WantedBy=default.target"));
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn profile_block_is_guarded_and_starts_apphost() {
-        let b = profile_block("/usr/local/bin/tuiui", "/run/x/apphost.sock");
+        let b = profile_block("/usr/local/bin/tankuos", "/run/x/apphost.sock");
         assert!(b.starts_with(PROFILE_START));
         assert!(b.trim_end().ends_with(PROFILE_END));
         assert!(b.contains("--apphost"));
@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn strip_profile_block_is_idempotent() {
         let base = "export FOO=1\n";
-        let with = format!("{base}{}", profile_block("/x/tuiui", "/s.sock"));
+        let with = format!("{base}{}", profile_block("/x/tankuos", "/s.sock"));
         assert_eq!(strip_profile_block(&with), base);
         assert_eq!(strip_profile_block(base), base); // no-op when absent
     }

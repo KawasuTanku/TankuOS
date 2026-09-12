@@ -30,3 +30,4 @@ path = "src/lib.rs"
 [[bin]]
 name = "tankuos"
 path = "src/main.rs"
+

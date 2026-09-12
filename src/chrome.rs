@@ -83,7 +83,7 @@ pub fn render_menubar(width: i32, focused_app: &str, segments: &[crate::tray::Se
     Layer { z: 1000, origin: Point::new(0, 0), buf, opacity: 1.0, scissor: None }
 }
 
-/// Screen-space hit region for the menubar brand ("tuiui") button, used to open
+/// Screen-space hit region for the menubar brand ("TankuOS") button, used to open
 /// the launcher dropdown. Top-left of the menubar.
 pub fn menubar_brand_region() -> Rect {
     Rect::new(0, 0, GO_LABEL.chars().count() as i32, 1)

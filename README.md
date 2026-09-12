@@ -2,12 +2,12 @@
 
 **TankuOS** is a desktop environment for the terminal — a windowing shell that runs *inside* your terminal emulator. Floating, overlapping windows, each hosting a real TUI application in its own pseudo-terminal, with a mouse cursor, menubar, dock, app launcher, and configurable grid tiling.
 
-This project is a fork of [tuiui](https://github.com/jaylfc/tuiui) by [jaylfc](https://github.com/jaylfc), modified to serve as the foundation for a unified terminal application suite. All credit goes to the original tuiui author for the architecture, compositor, PTY hosting, and window management that TankuOS builds on top of.
+This project is a fork of [tankuos](https://github.com/jaylfc/tankuos) by [jaylfc](https://github.com/jaylfc), modified to serve as the foundation for a unified terminal application suite. All credit goes to the original tankuos author for the architecture, compositor, PTY hosting, and window management that TankuOS builds on top of.
 
-## What changed from tuiui
+## What changed from tankuos
 
-- Renamed from `tuiui` to `TankuOS`
-- Menubar label changed to "Applications" (was "tuiui")
+- Renamed from `tankuos` to `TankuOS`
+- Menubar label changed to "Applications" (was "tankuos")
 - Power menu / host menu label changed to "TankuOS ▾" (was machine hostname)
 - Default app catalog replaced with TankuOS-integrated apps
 - Your apps (Retirement, Monster, MailVault, Montco Monitor) become first-class pane plugins
@@ -88,11 +88,11 @@ Then add an install recipe in `assets/recipes.json`. Your app gets window manage
 
 ## License
 
-MIT — same as the original tuiui. See `THIRD-PARTY-LICENSES.md` for bundled dependency credits.
+MIT — same as the original tankuos. See `THIRD-PARTY-LICENSES.md` for bundled dependency credits.
 
 ## Credits
 
-- [tuiui](https://github.com/jaylfc/tuiui) — original project by jaylfc (MIT)
+- [tankuos](https://github.com/jaylfc/tankuos) — original project by jaylfc (MIT)
 - [alacritty_terminal](https://docs.rs/alacritty_terminal) — terminal emulation
 - [crossterm](https://docs.rs/crossterm) — terminal I/O
 - [portable-pty](https://docs.rs/portable-pty) — pseudo-terminal support

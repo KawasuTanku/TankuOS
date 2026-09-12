@@ -89,7 +89,7 @@ fn role_for_ext(ext: &str) -> Option<Role> {
 pub enum OpenAction {
     /// A directory the file manager should navigate into.
     Navigate,
-    /// A built-in tuiui viewer, e.g. "@image".
+    /// A built-in tankuos viewer, e.g. "@image".
     Builtin(&'static str),
     /// Launch a terminal app with the file path appended.
     RunApp { command: String, args: Vec<String> },

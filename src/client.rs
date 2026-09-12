@@ -35,9 +35,9 @@ pub fn run(stream: UnixStream) -> std::io::Result<ClientExit> {
     let mut out_stream = stream.try_clone()?;
     send(&mut out_stream, &ClientMsg::Resize { w, h })?;
 
-    // A per-system theme rides over ssh as TUIUI_THEME: apply it to this
+    // A per-system theme rides over ssh as TANKUOS_THEME: apply it to this
     // daemon's config as soon as we attach.
-    if let Ok(theme) = std::env::var("TUIUI_THEME") {
+    if let Ok(theme) = std::env::var("TANKUOS_THEME") {
         if !theme.is_empty() {
             send(&mut out_stream, &ClientMsg::SetTheme(theme))?;
         }

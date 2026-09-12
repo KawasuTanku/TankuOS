@@ -1,7 +1,7 @@
 //! Native `gpm` (General Purpose Mouse) client for the bare Linux console.
 //!
 //! Speaks the `/dev/gpmctl` socket protocol directly — no `libgpm` linkage, so it
-//! does not affect tuiui's MIT licensing. Linux-console-only; a no-op elsewhere.
+//! does not affect tankuos's MIT licensing. Linux-console-only; a no-op elsewhere.
 
 use crate::mouse::{MouseAction, MouseButton, MouseInput, MouseMods};
 
@@ -112,7 +112,7 @@ pub fn to_mouse_input(prev: u8, ev: &GpmEvent) -> Option<MouseInput> {
 }
 
 /// Start the gpm reader if we're on a Linux console and gpm is reachable.
-/// No-op on other platforms or when not on a VT (unless `TUIUI_GPM=1`).
+/// No-op on other platforms or when not on a VT (unless `TANKUOS_GPM=1`).
 #[cfg(target_os = "linux")]
 pub fn start(
     flags: std::sync::Arc<std::sync::Mutex<crate::protocol::Flags>>,
@@ -121,7 +121,7 @@ pub fn start(
     use std::io::{Read, Write};
     use std::os::unix::net::UnixStream;
 
-    let force = std::env::var("TUIUI_GPM").ok();
+    let force = std::env::var("TANKUOS_GPM").ok();
     if force.as_deref() == Some("0") {
         return;
     }

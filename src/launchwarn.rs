@@ -139,7 +139,7 @@ impl LaunchWarn {
         for x in 0..d.w {
             buf.set(x, 0, Cell { ch: ' ', fg: t.title_fg, bg: t.title_focus, attrs: Default::default() });
         }
-        buf.write_str(2, 0, " tuiui ", t.title_fg, t.title_focus);
+        buf.write_str(2, 0, " TankuOS ", t.title_fg, t.title_focus);
         // Border.
         let b = |ch: char| Cell { ch, fg: t.border, bg: t.window_bg, attrs: Default::default() };
         for y in 1..d.h {

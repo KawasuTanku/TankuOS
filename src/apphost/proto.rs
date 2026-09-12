@@ -18,9 +18,9 @@ pub enum HostReq {
     SetMeta { app: u64, meta: Vec<u8> },
     Kill { app: u64 },
     /// Ask the apphost to enumerate its hosted apps. The apphost replies with
-    /// `HostEvt::AppList`. Used by `tuiui ps` / `tuiui kill-app`.
+    /// `HostEvt::AppList`. Used by `tankuos ps` / `tankuos kill-app`.
     ListApps,
-    /// Stop the apphost process entirely (full shutdown / `tuiui kill`).
+    /// Stop the apphost process entirely (full shutdown / `tankuos kill`).
     Shutdown,
 }
 
@@ -57,7 +57,7 @@ pub struct RosterEntry {
 }
 
 /// One row in `HostEvt::AppList` — a snapshot of a hosted app's state. Used by
-/// `tuiui ps`. `age_secs` is seconds since the app was spawned (so the client
+/// `tankuos ps`. `age_secs` is seconds since the app was spawned (so the client
 /// doesn't need a synchronized clock with the apphost).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppListEntry {

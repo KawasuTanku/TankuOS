@@ -30,9 +30,9 @@ impl Caps {
             || term.contains("ghostty")
             || term.contains("kitty")
             || term.contains("wezterm");
-        // Manual override: `TUIUI_GRAPHICS=1` forces graphics on when detection
+        // Manual override: `TANKUOS_GRAPHICS=1` forces graphics on when detection
         // can't see the terminal (e.g. SSH with TERM stripped to xterm-256color).
-        let force = std::env::var("TUIUI_GRAPHICS").map(|v| v != "0").unwrap_or(false);
+        let force = std::env::var("TANKUOS_GRAPHICS").map(|v| v != "0").unwrap_or(false);
         let graphics = known || force;
         // Known terminals are all truecolor; otherwise trust COLORTERM.
         let truecolor = graphics || ct.contains("truecolor") || ct.contains("24bit");

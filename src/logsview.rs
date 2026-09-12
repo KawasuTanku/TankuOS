@@ -1,9 +1,9 @@
-//! The built-in Logs viewer (launcher → tuiui → Logs): a scrollable window over
-//! `~/tuiui-debug.log` with one-key copy of the log to the host terminal's
+//! The built-in Logs viewer (launcher → tankuos → Logs): a scrollable window over
+//! `~/tankuos-debug.log` with one-key copy of the log to the host terminal's
 //! clipboard (OSC 52 — works in Ghostty/Kitty/WezTerm and over ssh).
 //!
 //! Logging is always on (see [`crate::dbg_log`]), so this window has content
-//! without restarting tuiui with an env var.
+//! without restarting tankuos with an env var.
 
 use crate::buffer::CellBuffer;
 use crate::cell::Cell;
@@ -34,7 +34,7 @@ impl Default for LogsView {
 
 /// The log file path shown and read by the viewer.
 pub fn log_path() -> Option<std::path::PathBuf> {
-    dirs::home_dir().map(|h| h.join("tuiui-debug.log"))
+    dirs::home_dir().map(|h| h.join("tankuos-debug.log"))
 }
 
 impl LogsView {
@@ -64,7 +64,7 @@ impl LogsView {
                 self.status = format!("{} lines", self.lines.len());
             }
             Err(_) => {
-                self.lines = vec!["(no log yet — this file appears as tuiui logs events)".into()];
+                self.lines = vec!["(no log yet — this file appears as tankuos logs events)".into()];
                 self.status = format!("missing: {}", path.display());
             }
         }

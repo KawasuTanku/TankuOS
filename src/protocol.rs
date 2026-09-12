@@ -1,4 +1,4 @@
-//! Wire protocol between the tuiui daemon and a thin client over a local Unix
+//! Wire protocol between the tankuos daemon and a thin client over a local Unix
 //! socket. Messages are newline-delimited JSON.
 //!
 //! - **Client → daemon:** [`crate::session::ClientMsg`] (input, resize, shutdown).
@@ -131,7 +131,7 @@ pub fn socket_dir() -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or_else(std::env::temp_dir);
     let user = std::env::var("USER").unwrap_or_else(|_| "user".into());
-    base.join(format!("tuiui-{user}"))
+    base.join(format!("tankuos-{user}"))
 }
 
 /// Path of the per-user daemon socket.
@@ -139,7 +139,7 @@ pub fn socket_path() -> PathBuf {
     socket_dir().join("daemon.sock")
 }
 
-/// Path of the daemon's out-of-band control socket. `tuiui kill` / `tuiui reload`
+/// Path of the daemon's out-of-band control socket. `tankuos kill` / `tankuos reload`
 /// send here so they work even while a client is attached — the daemon serves a
 /// single client on `socket_path()` serially, so a control message on the main
 /// socket would queue behind the attached client and never be read.

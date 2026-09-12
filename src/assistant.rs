@@ -8,7 +8,7 @@
 //! (host name, saved systems, version). That directory is forced as the agent's
 //! cwd, and `AGENTS.md` is the convention opencode reads on startup.
 //!
-//! tuiui standardises on opencode: one model-agnostic, MCP-extensible CLI
+//! tankuos standardises on opencode: one model-agnostic, MCP-extensible CLI
 //! rather than a menu of frameworks. `assistant_command` in config.toml can
 //! still point the panel at a different binary (e.g. a wrapper or an
 //! MCP-preconfigured launcher), but there is no per-framework branching here.
@@ -22,7 +22,7 @@ const SYSTEMS_MD: &str = include_str!("../agent/SYSTEMS.md");
 const TROUBLESHOOTING_MD: &str = include_str!("../agent/TROUBLESHOOTING.md");
 const RULES_MD: &str = include_str!("../agent/RULES.md");
 
-/// The agent CLI tuiui launches by default. Override with `assistant_command`
+/// The agent CLI tankuos launches by default. Override with `assistant_command`
 /// in config.toml to point the panel at a different binary.
 pub const DEFAULT_AGENT: &str = "opencode";
 
@@ -75,7 +75,7 @@ pub fn workdir() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .or_else(|| dirs::home_dir().map(|h| h.join(".local/share")))?;
-    Some(base.join("tuiui").join("assistant"))
+    Some(base.join("TankuOS").join("assistant"))
 }
 
 /// Markdown table of the user's saved systems for the SYSTEMS guide, or a
@@ -83,7 +83,7 @@ pub fn workdir() -> Option<PathBuf> {
 fn systems_table(systems: &[crate::systems::RemoteSystem]) -> String {
     if systems.is_empty() {
         return "(none saved yet — the user adds machines via the power menu's \
-Systems → Add Remote, which installs SSH keys and tuiui on them)"
+Systems → Add Remote, which installs SSH keys and tankuos on them)"
             .to_string();
     }
     let mut t = String::from("| name | ssh target | port |\n|---|---|---|\n");
@@ -145,18 +145,18 @@ mod tests {
     fn briefing_contains_the_essentials() {
         let b = briefing("mini", &sys());
         for needle in [
-            "tuiui desktop assistant",
+            "TankuOS desktop assistant",
             "mini",
             crate::REPO_URL,
-            "tuiui launch",
-            "tuiui tile",
-            "tuiui theme",
-            "tuiui msg",
-            "tuiui-debug.log",
+            "tankuos launch",
+            "tankuos tile",
+            "tankuos theme",
+            "tankuos msg",
+            "tankuos-debug.log",
             "config.toml",
             "systems.toml",
             "pull request",
-            "Never run `tuiui kill`",
+            "Never run `tankuos kill`",
             // Cross-machine operations: the saved system appears with its port,
             // and the scp/ssh recipes are present.
             "me@10.0.0.7",
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn pack_written_as_agents_md_and_cleans_retired_files() {
-        let dir = std::env::temp_dir().join(format!("tuiui-assist-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("tankuos-assist-test-{}", std::process::id()));
         // Simulate an upgrade: a workdir left by the old multi-framework stamping.
         std::fs::create_dir_all(dir.join("knowledge")).unwrap();
         std::fs::write(dir.join("CLAUDE.md"), "stale").unwrap();
@@ -217,7 +217,7 @@ mod tests {
         // A bare name that surely isn't installed reports unavailable.
         assert!(!agent_available("definitely-not-a-real-binary-xyz"));
         // An explicit path is checked on disk (and, on Unix, must be executable).
-        let f = std::env::temp_dir().join(format!("tuiui-agent-{}", std::process::id()));
+        let f = std::env::temp_dir().join(format!("tankuos-agent-{}", std::process::id()));
         std::fs::write(&f, "#!/bin/sh\n").unwrap();
         #[cfg(unix)]
         {

@@ -47,7 +47,7 @@ struct WinMeta {
 /// `Some((ssh_target, port))` a saved remote system.
 type FmBackend = Option<(String, Option<u16>)>;
 
-/// The content hosted by a window: a PTY-backed app or a native Tuiui widget.
+/// The content hosted by a window: a PTY-backed app or a native TankuOS widget.
 ///
 /// This is the [`WindowContent`](../../docs) seam — the window manager, chrome,
 /// and input routing operate on windows uniformly, while the content type varies.
@@ -63,7 +63,7 @@ enum WinContent {
     ImageView(crate::imageview::ImageView),
     /// The native file manager (local disk or a remote system over ssh).
     FileManager(crate::filemanager::DynFileManager),
-    /// The native log viewer (tail of ~/tuiui-debug.log + clipboard copy).
+    /// The native log viewer (tail of ~/tankuos-debug.log + clipboard copy).
     Logs(crate::logsview::LogsView),
     /// The activity monitor — a live table of hosted apps with kill-app controls.
     Activity(Activity),
@@ -293,7 +293,7 @@ pub enum ClientMsg {
     LaunchWarnYes,
     /// Dismiss the launch-warning dialog (Esc / n) without launching.
     LaunchWarnNo,
-    /// Shut down the daemon entirely (kills all apps). Sent by `tuiui kill`.
+    /// Shut down the daemon entirely (kills all apps). Sent by `tankuos kill`.
     Shutdown,
     /// Restart the frontend only, keeping the apphost (and apps) alive.
     Reload,
@@ -317,7 +317,7 @@ pub enum ClientMsg {
     /// Power-menu form: Esc — back to the Systems submenu.
     PowerFormCancel,
     /// Apply (and persist) a theme by name. Sent by the client on attach when
-    /// `TUIUI_THEME` is set — how a per-system theme rides over ssh.
+    /// `TANKUOS_THEME` is set — how a per-system theme rides over ssh.
     SetTheme(String),
     /// Logs viewer: scroll one line / one page.
     LogsUp,
@@ -452,7 +452,7 @@ pub struct SessionCore {
     /// the desktop folder (throttle so every tick doesn't hit the filesystem).
     desktop_last_poll: std::time::Instant,
     /// The desktop folder's modified-time as of the last poll, so a changed
-    /// mtime (folder/file created or removed outside tuiui) is detected.
+    /// mtime (folder/file created or removed outside tankuos) is detected.
     desktop_last_mtime: Option<std::time::SystemTime>,
     /// Maps a hosted app's Kitty image id `(window, kitty_id)` to the `ImageStore`
     /// id its PNG was loaded under (populated by [`refresh_app_graphics`]).
@@ -762,7 +762,7 @@ impl SessionCore {
                     crate::VERSION,
                     std::env::current_exe().ok()
                 ));
-                self.launch("update tuiui".into(), "sh".into(), vec!["-lc".into(), cmd]);
+                self.launch("update tankuos".into(), "sh".into(), vec!["-lc".into(), cmd]);
             }
             None => {}
         }
@@ -843,7 +843,7 @@ impl SessionCore {
         for x in 0..d.w {
             buf.set(x, 0, crate::cell::Cell { ch: ' ', fg: t.title_fg, bg: t.title_focus, attrs: Default::default() });
         }
-        buf.write_str(2, 0, " tuiui update ", t.title_fg, t.title_focus);
+        buf.write_str(2, 0, " TankuOS update ", t.title_fg, t.title_focus);
         let b = |ch: char| crate::cell::Cell { ch, fg: t.border, bg: t.window_bg, attrs: Default::default() };
         for y in 1..d.h {
             buf.set(0, y, b('\u{2502}'));
@@ -1152,7 +1152,7 @@ impl SessionCore {
         self.tray_state = state;
     }
 
-    /// Whether `tuiui kill` requested a full daemon shutdown.
+    /// Whether `tankuos kill` requested a full daemon shutdown.
     pub fn shutdown_requested(&self) -> bool { self.shutdown }
 
     /// Whether a frontend-only reload was requested (apps stay alive).
@@ -1270,13 +1270,13 @@ or a remote-side error — its authorized_keys was left untouched)",
     /// in from the catalog where missing), plus any known TUIs detected on `$PATH`
     /// that aren't already listed.
     fn build_launcher_apps(cfg: &Config, systems: &[crate::systems::RemoteSystem]) -> Vec<AppEntry> {
-        // Pinned tuiui actions first (open the store / settings windows).
+        // Pinned tankuos actions first (open the store / settings windows).
         let mut apps = vec![
-            AppEntry { name: "Store".into(), command: "@store".into(), args: vec![], category: Some("tuiui".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
-            AppEntry { name: "Settings".into(), command: "@settings".into(), args: vec![], category: Some("tuiui".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
-            AppEntry { name: "Files".into(), command: "@files".into(), args: vec![], category: Some("tuiui".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
-            AppEntry { name: "Logs".into(), command: "@logs".into(), args: vec![], category: Some("tuiui".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
-            AppEntry { name: "Activity".into(), command: "@activity".into(), args: vec![], category: Some("tuiui".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
+            AppEntry { name: "Store".into(), command: "@store".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
+            AppEntry { name: "Settings".into(), command: "@settings".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
+            AppEntry { name: "Files".into(), command: "@files".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
+            AppEntry { name: "Logs".into(), command: "@logs".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
+            AppEntry { name: "Activity".into(), command: "@activity".into(), args: vec![], category: Some("TankuOS".into()), requires_cwd: None, cwd: None, cli: None, warn: None },
         ];
         // One remote file browser per saved system (Systems category).
         for sys in systems {
@@ -1513,11 +1513,11 @@ or a remote-side error — its authorized_keys was left untouched)",
         }
         match msg {
             ClientMsg::Launch { name, command, args } => {
-                // The `tuiui launch` escape hatch (CLI / assistant / dock pins).
+                // The `tankuos launch` escape hatch (CLI / assistant / dock pins).
                 // A bare launch of a catalog-flagged CLI tool would open a window
                 // that prints usage and instantly dies, so give it the same
                 // help-then-shell wrapper as the launcher menu. Explicit args mean
-                // an intentional invocation (`tuiui launch gum choose a b`) —
+                // an intentional invocation (`tankuos launch gum choose a b`) —
                 // run those as given.
                 let (command, args) = if args.is_empty()
                     && (crate::catalog::is_cli(&command) || crate::catalog::is_cli(&name))
@@ -2030,7 +2030,7 @@ or a remote-side error — its authorized_keys was left untouched)",
                 }
             }
             ClientMsg::SetTheme(name) => {
-                crate::dbg_log(&format!("theme: set '{name}' (client attach / TUIUI_THEME)"));
+                crate::dbg_log(&format!("theme: set '{name}' (client attach / TANKUOS_THEME)"));
                 crate::theme::set(&name);
                 self.cfg.theme = name;
                 if let Err(e) = self.cfg.save() {
@@ -2790,7 +2790,7 @@ or a remote-side error — its authorized_keys was left untouched)",
         }
     }
 
-    /// Activate a launcher entry: open the store/settings for the pinned tuiui
+    /// Activate a launcher entry: open the store/settings for the pinned tankuos
     /// actions, otherwise spawn the app (prompting for a working directory when
     /// the entry is flagged `requires_cwd` and has no fixed `cwd`).
     fn launch_entry(&mut self, e: AppEntry) {
@@ -4071,7 +4071,7 @@ fn sanitize_branch(branch: &str) -> String {
     if ok { branch.to_string() } else { "main".to_string() }
 }
 
-/// The shell command that updates tuiui and reloads. On `main` it prefers the
+/// The shell command that updates tankuos and reloads. On `main` it prefers the
 /// prebuilt release binary (a fast download via `install.sh`, jumping straight
 /// to the latest release), falling back to a source build; on any other branch
 /// (the dev channel) it builds that branch from git. On success it reloads and
@@ -4080,7 +4080,7 @@ fn update_command(branch: &str) -> String {
     let branch = sanitize_branch(branch);
     let branch = branch.as_str();
     let repo = crate::REPO_URL;
-    let raw = "https://raw.githubusercontent.com/jaylfc/tuiui";
+    let raw = "https://raw.githubusercontent.com/jaylfc/tankuos";
     // Keep the new binary where the running one lives (cargo bin vs ~/.local/bin).
     let exe_dir = std::env::current_exe()
         .ok()
@@ -4090,36 +4090,36 @@ fn update_command(branch: &str) -> String {
     let root_flag = std::env::current_exe().map(|p| cargo_root_flag(&p)).unwrap_or_default();
     let dir = crate::systems::sh_quote(&exe_dir);
     // Reload via the freshly-installed binary's ABSOLUTE path, not a bare
-    // `tuiui`. The updater runs in a non-interactive `sh -lc`, whose PATH may
+    // `tankuos`. The updater runs in a non-interactive `sh -lc`, whose PATH may
     // not include the install dir (~/.local/bin is added by interactive zsh
-    // config, not a login `sh`). If `tuiui reload` isn't found, the install
+    // config, not a login `sh`). If `tankuos reload` isn't found, the install
     // still succeeds but the daemon never restarts onto the new binary — so
     // the running version never changes and the update appears to "keep
-    // failing". install.sh lands the binary in `exe_dir` (TUIUI_BIN_DIR), and
-    // the cargo `--root` fallback targets the same dir, so `{exe_dir}/tuiui` is
+    // failing". install.sh lands the binary in `exe_dir` (TANKUOS_BIN_DIR), and
+    // the cargo `--root` fallback targets the same dir, so `{exe_dir}/tankuos` is
     // the new binary in both paths.
-    let reload = crate::systems::sh_quote(&format!("{exe_dir}/tuiui"));
-    // Append each step to ~/tuiui-debug.log (same file as dbg_log) so a failed
+    let reload = crate::systems::sh_quote(&format!("{exe_dir}/tankuos"));
+    // Append each step to ~/tankuos-debug.log (same file as dbg_log) so a failed
     // update is visible in the log the user pastes — the install runs in a
     // window whose output is otherwise lost.
-    let log = "\"$HOME/tuiui-debug.log\"";
+    let log = "\"$HOME/tankuos-debug.log\"";
     if branch == "main" {
         format!(
-            "clear; echo 'Updating tuiui (latest release)…'; echo; \
+            "clear; echo 'Updating tankuos (latest release)…'; echo; \
 echo \"update: install -> {dir}\" >> {log}; \
-if TUIUI_BIN_DIR={dir} sh -c 'curl -fsSL {raw}/main/install.sh | sh'; then \
+if TANKUOS_BIN_DIR={dir} sh -c 'curl -fsSL {raw}/main/install.sh | sh'; then \
 echo \"update: install.sh ok; reloading via {reload}\" >> {log}; echo; echo 'Reloading…'; {reload} reload; exit 0; \
 elif cargo install --git {repo}{root_flag} --force; then \
 echo \"update: cargo fallback ok; reloading via {reload}\" >> {log}; echo; echo 'Reloading…'; {reload} reload; exit 0; \
-else echo \"update: FAILED (install.sh and cargo both failed)\" >> {log}; echo 'Update failed — tuiui not reloaded.'; exec \"$SHELL\"; fi",
+else echo \"update: FAILED (install.sh and cargo both failed)\" >> {log}; echo 'Update failed — tankuos not reloaded.'; exec \"$SHELL\"; fi",
         )
     } else {
         format!(
-            "clear; echo 'Updating tuiui (branch {branch})…'; echo; \
+            "clear; echo 'Updating tankuos (branch {branch})…'; echo; \
 echo \"update: cargo install (branch {branch})\" >> {log}; \
 if cargo install --git {repo} --branch {branch}{root_flag} --force; then \
 echo \"update: cargo ok; reloading via {reload}\" >> {log}; echo; echo 'Reloading…'; {reload} reload; exit 0; \
-else echo \"update: FAILED (cargo branch {branch})\" >> {log}; echo 'Update failed — tuiui not reloaded.'; exec \"$SHELL\"; fi",
+else echo \"update: FAILED (cargo branch {branch})\" >> {log}; echo 'Update failed — tankuos not reloaded.'; exec \"$SHELL\"; fi",
         )
     }
 }
@@ -4253,7 +4253,7 @@ fn check_for_updates(branch: &str) -> String {
     let get_json = |path: &str| -> Option<serde_json::Value> {
         let url = format!("https://api.github.com/repos/{repo}/{path}");
         std::process::Command::new("curl")
-            .args(["-fsS", "--max-time", "6", "-H", "User-Agent: tuiui", &url])
+            .args(["-fsS", "--max-time", "6", "-H", "User-Agent: tankuos", &url])
             .output()
             .ok()
             .filter(|o| o.status.success())
@@ -4310,7 +4310,7 @@ fn check_for_updates(branch: &str) -> String {
 /// Parse a `MAJOR.MINOR.PATCH` version (a leading `v` is tolerated) into a
 /// comparable tuple, or `None` if it isn't exactly that. This is a numeric
 /// `major.minor.patch` comparison, *not* full semver: any `-pre`/`+build`
-/// suffix is dropped before parsing (tuiui only ever ships plain release
+/// suffix is dropped before parsing (tankuos only ever ships plain release
 /// versions, so pre-release precedence never comes up). Anything that isn't
 /// three numeric components — too few, too many, or non-numeric — is `None`, so
 /// a malformed release tag surfaces as a check failure instead of silently
@@ -4377,9 +4377,9 @@ mod tests {
         let cmd = update_command("main");
         assert!(cmd.contains("install.sh"), "fast path is the prebuilt release: {cmd}");
         assert!(cmd.contains("cargo install --git"), "with a source fallback");
-        assert!(cmd.contains("/tuiui' reload"), "reloads via the installed binary's absolute path: {cmd}");
-        assert!(!cmd.contains("; tuiui reload"), "must not rely on PATH-resolving a bare `tuiui`: {cmd}");
-        assert!(cmd.contains("tuiui-debug.log"), "logs each step to the debug log");
+        assert!(cmd.contains("/tankuos' reload"), "reloads via the installed binary's absolute path: {cmd}");
+        assert!(!cmd.contains("; tankuos reload"), "must not rely on PATH-resolving a bare `tankuos`: {cmd}");
+        assert!(cmd.contains("tankuos-debug.log"), "logs each step to the debug log");
         assert!(cmd.contains("exit 0"), "exits so the updater window auto-closes");
         assert!(!cmd.contains("--branch"), "main needs no branch flag");
     }
@@ -4389,11 +4389,11 @@ mod tests {
         use std::path::Path;
         // A binary in a `bin/` dir → cargo is steered to the parent (it appends
         // `/bin`), so the source build lands next to the running binary.
-        assert_eq!(cargo_root_flag(Path::new("/home/jay/.local/bin/tuiui")), " --root '/home/jay/.local'");
-        assert_eq!(cargo_root_flag(Path::new("/home/jay/.cargo/bin/tuiui")), " --root '/home/jay/.cargo'");
+        assert_eq!(cargo_root_flag(Path::new("/home/jay/.local/bin/tankuos")), " --root '/home/jay/.local'");
+        assert_eq!(cargo_root_flag(Path::new("/home/jay/.cargo/bin/tankuos")), " --root '/home/jay/.cargo'");
         // Not in a `bin/` dir → no `--root` (leave cargo's default).
-        assert_eq!(cargo_root_flag(Path::new("/opt/tuiui/tuiui")), "");
-        assert_eq!(cargo_root_flag(Path::new("tuiui")), "");
+        assert_eq!(cargo_root_flag(Path::new("/opt/tankuos/tankuos")), "");
+        assert_eq!(cargo_root_flag(Path::new("TankuOS")), "");
     }
 
     #[test]

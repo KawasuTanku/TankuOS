@@ -1,5 +1,5 @@
 //! The apphost process: owns the live apps behind a socket, pushing per-app
-//! frames and accepting commands from the frontend. Started as `tuiui --apphost`
+//! frames and accepting commands from the frontend. Started as `tankuos --apphost`
 //! (normally spawned automatically by the frontend daemon). The apps it owns
 //! survive a frontend restart because this process keeps running.
 
@@ -79,7 +79,7 @@ fn serve_frontend(local: &mut LocalAppHost, stream: UnixStream, shutdown: &mut b
             .collect(),
         proto: crate::apphost::proto::PROTO_VERSION,
     };
-    // Best-effort: a short-lived connection (e.g. `tuiui kill` sending Shutdown)
+    // Best-effort: a short-lived connection (e.g. `tankuos kill` sending Shutdown)
     // may close before we finish writing the roster. Don't abandon the
     // connection on that — we still want to read any pending command (Shutdown).
     let _ = send(&mut writer, &roster);

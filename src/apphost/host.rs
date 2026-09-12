@@ -18,7 +18,7 @@ pub struct LocalAppHost {
     apps: HashMap<AppId, AppInstance>,
     meta: HashMap<AppId, Vec<u8>>,
     /// Original `cmd` + `args` for each hosted app, so the activity monitor
-    /// (`tuiui ps`, the in-app panel) can display what was actually launched
+    /// (`tankuos ps`, the in-app panel) can display what was actually launched
     /// even after the `AppInstance`'s internal state changes.
     cmds: HashMap<AppId, (String, Vec<String>)>,
     next: u64,

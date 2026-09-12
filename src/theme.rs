@@ -30,7 +30,7 @@ const fn rgb(r: u8, g: u8, b: u8) -> Rgba {
 }
 
 impl Theme {
-    /// The default dark theme (tuiui's original palette).
+    /// The default dark theme (tankuos's original palette).
     pub const fn midnight() -> Self {
         Theme {
             desktop_bg: rgb(44, 46, 50),
