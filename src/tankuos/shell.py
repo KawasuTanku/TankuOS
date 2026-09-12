@@ -87,7 +87,7 @@ class Pane:
             visible_lines = self.h - 3
             start = self.scroll_offset
             end = min(start + visible_lines, len(self.content_lines))
-            for i, line_idx in range(start, end):
+            for i, line_idx in enumerate(range(start, end)):
                 line = self.content_lines[line_idx]
                 # Truncate to fit
                 max_w = self.w - 2
@@ -343,7 +343,7 @@ class TankuOS:
         if not self.stdscr:
             return
 
-        self.stdscr.clear()
+        self.stdscr.erase()
         h, w = self.stdscr.getmaxyx()
 
         # Draw menubar
@@ -364,19 +364,30 @@ class TankuOS:
         curses.curs_set(0)  # Hide cursor
         self.init_colors()
         stdscr.keypad(True)
-        stdscr.timeout(100)
+        stdscr.nodelay(True)  # Non-blocking input
 
         self.running = True
+        dirty = True  # Track if screen needs redraw
 
         # Launch initial shell
         self.launch_app("Shell")
 
         while self.running:
-            self.draw()
-            ch = stdscr.getch()
+            if dirty:
+                self.draw()
+                dirty = False
+
+            try:
+                ch = stdscr.getch()
+            except curses.error:
+                ch = -1
 
             if ch == -1:
+                # No input, sleep to avoid busy loop
+                curses.napms(30)
                 continue
+
+            dirty = True  # Mark screen as needing redraw
 
             # Handle keypress
             if ch == curses.KEY_RESIZE:
