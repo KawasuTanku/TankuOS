@@ -307,6 +307,22 @@ class Shell(App):
         else:
             content = Static(f"{app_name}\n\n[Plugin content goes here]", classes="pane-content")
 
+        # Calculate new grid size BEFORE mounting
+        new_count = len(self.panes) + 1
+        if new_count <= 1:
+            cols, rows = 1, 1
+        elif new_count == 2:
+            cols, rows = 2, 1
+        elif new_count <= 4:
+            cols, rows = 2, 2
+        elif new_count <= 6:
+            cols, rows = 3, 2
+        else:
+            cols, rows = 3, 3
+        placeholder.styles.grid_size_columns = cols
+        placeholder.styles.grid_size_rows = rows
+        placeholder.refresh()
+
         pane = Pane(
             title=app_name,
             content=content,
@@ -315,7 +331,7 @@ class Shell(App):
         )
         self.panes[pane.pane_id] = pane
         placeholder.mount(pane)
-        self._reflow_grid()
+        self.refresh()
         self.notify(f"Launched: {app_name}")
 
     def _reflow_grid(self) -> None:
@@ -334,6 +350,8 @@ class Shell(App):
             cols, rows = 3, 3
         placeholder.styles.grid_size_columns = cols
         placeholder.styles.grid_size_rows = rows
+        placeholder.refresh()
+        self.refresh()
 
     def action_help(self) -> None:
         self.notify("TankuOS — Retro Desktop | F1: Help | F2: Theme | F3: Apps | TankuOS → Exit to Quit")
