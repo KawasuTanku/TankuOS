@@ -117,7 +117,7 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release --locked --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package
         run: tar -C target/${{ matrix.target }}/release -czf tankuos-${{ matrix.target }}.tar.gz tankuos
