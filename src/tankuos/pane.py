@@ -20,6 +20,20 @@ class Pane(Widget):
     CSS = """
     Pane {
         height: 1fr;
+        border: solid $primary;
+        padding: 0;
+    }
+
+    Pane:focus-within {
+        border: solid $accent;
+    }
+
+    #titlebar {
+        height: 1;
+    }
+
+    .pane-content {
+        height: 1fr;
     }
     """
 

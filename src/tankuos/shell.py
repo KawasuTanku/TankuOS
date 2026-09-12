@@ -246,6 +246,7 @@ class Shell(App):
             title=app_name,
             content=content,
             pane_id=f"pane-{app_name.lower()}",
+            classes="pane",
         )
         self.panes[pane.pane_id] = pane
         placeholder.mount(pane)
