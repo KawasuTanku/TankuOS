@@ -1,6 +1,6 @@
 """Core shell — TankuOS retro desktop."""
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
@@ -202,26 +202,24 @@ class Shell(App):
     #pane-grid {
         height: 1fr;
         padding: 0;
-        layout: grid;
-        grid-size: 3 1;
-        grid-gutter: 1;
     }
 
-    .pane-cell {
+    #pane-grid > Horizontal {
+        height: 1fr;
+    }
+
+    #pane-grid > Horizontal > Container {
+        width: 1fr;
         height: 1fr;
         border: solid $primary;
     }
 
-    .pane-cell > Pane {
+    #pane-grid > Horizontal > Container > Pane {
         height: 1fr;
     }
 
-    .pane-cell.focused {
+    #pane-grid > Horizontal > Container.focused {
         border: solid $accent;
-    }
-
-    .pane-cell:empty {
-        display: none;
     }
     """
 
@@ -239,7 +237,7 @@ class Shell(App):
         self._menu_button = None
         self.panes: Dict[str, dict] = {}
         self.active_pane_id: Optional[str] = None
-        self._cells: list = []
+        self._cells: List[Container] = []
 
     def compose(self) -> ComposeResult:
         with Container(id="desktop"):
@@ -251,10 +249,13 @@ class Shell(App):
 
             with Container(id="workspace"):
                 with Container(id="pane-grid") as self._grid:
+                    # Create a single row with fixed cells
+                    row = Horizontal()
+                    yield row
                     for i in range(self.MAX_CELLS):
                         cell = Container(classes="pane-cell", id=f"cell-{i}")
                         self._cells.append(cell)
-                        yield cell
+                        row.mount(cell)
 
             with Horizontal(id="statusbar"):
                 yield Static(" F1 Help")

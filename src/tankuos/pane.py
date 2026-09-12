@@ -2,6 +2,7 @@
 
 from textual.widget import Widget
 from textual.widgets import Static
+from textual.containers import Vertical
 from textual.app import ComposeResult
 from textual.message import Message
 from rich.text import Text
@@ -14,13 +15,12 @@ class ClosePaneRequest(Message):
         self.pane_id = pane_id
 
 
-class Pane(Widget):
+class Pane(Vertical):
     """A TankuOS pane - title bar + content."""
 
     CSS = """
     Pane {
         height: 1fr;
-        border: solid $primary;
     }
     """
 
@@ -32,44 +32,41 @@ class Pane(Widget):
         self.title = title
         self.content_widget = content
         self._is_focused = False
-        self._titlebar = None
 
     def compose(self) -> ComposeResult:
-        self._titlebar = Static("", id="titlebar")
-        yield self._titlebar
+        yield Static("", id="titlebar")
         self.content_widget.add_class("pane-content")
         yield self.content_widget
 
     def on_mount(self) -> None:
-        self._render_titlebar()
+        self._update_titlebar()
 
     def on_resize(self) -> None:
-        self._render_titlebar()
+        self._update_titlebar()
 
     def set_focused(self, value: bool) -> None:
         """Set focus state and update visuals."""
         self._is_focused = value
-        self._render_titlebar()
+        self._update_titlebar()
 
-    def _render_titlebar(self) -> None:
-        width = self.size.width or 80
-        padding = max(0, width - len(self.title) - 4)
-        text = Text()
-        text.append(" ")
-        if self._is_focused:
-            text.append(self.title, style="bold white on green")
-            text.append(" " * padding, style="on green")
-            text.append("[x]", style="bold red on green")
-        else:
-            text.append(self.title, style="bold white on blue")
-            text.append(" " * padding, style="on blue")
-            text.append("[x]", style="bold red on blue")
-        if self._titlebar is None:
-            try:
-                self._titlebar = self.query_one("#titlebar", Static)
-            except:
-                return
-        self._titlebar.update(text)
+    def _update_titlebar(self) -> None:
+        try:
+            titlebar = self.query_one("#titlebar", Static)
+            width = self.size.width or 40
+            padding = max(0, width - len(self.title) - 4)
+            text = Text()
+            text.append(" ")
+            if self._is_focused:
+                text.append(self.title, style="bold white on green")
+                text.append(" " * padding, style="on green")
+                text.append("[x]", style="bold red on green")
+            else:
+                text.append(self.title, style="bold white on blue")
+                text.append(" " * padding, style="on blue")
+                text.append("[x]", style="bold red on blue")
+            titlebar.update(text)
+        except:
+            pass
 
     def on_click(self, event):
         """Handle clicks on this widget."""
