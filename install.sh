@@ -62,11 +62,18 @@ fi
 url="https://github.com/$REPO/releases/download/$tag/tankuos-$target.tar.gz"
 echo "tankuos: downloading $tag ($target)…"
 mkdir -p "$BIN_DIR"
-if ! fetch "$url" | tar -xz -C "$BIN_DIR" 2>/dev/null || [ ! -f "$BIN_DIR/tankuos" ]; then
+tmp_dir=$(mktemp -d)
+if ! fetch "$url" | tar -xz -C "$tmp_dir" 2>/dev/null || [ ! -f "$tmp_dir/tankuos" ]; then
   echo "tankuos: no prebuilt binary for $target in $tag."
   echo "Install with Rust instead:  cargo install --git https://github.com/$REPO"
+  rm -rf "$tmp_dir"
   exit 1
 fi
+# Atomic swap: move old to .bak, move new in place, remove .bak
+[ -f "$BIN_DIR/tankuos" ] && mv -f "$BIN_DIR/tankuos" "$BIN_DIR/tankuos.bak" 2>/dev/null || true
+mv -f "$tmp_dir/tankuos" "$BIN_DIR/tankuos"
+rm -f "$BIN_DIR/tankuos.bak"
+rm -rf "$tmp_dir"
 chmod +x "$BIN_DIR/tankuos"
 
 echo "tankuos: installed $tag -> $BIN_DIR/tankuos"
