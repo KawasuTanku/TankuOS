@@ -185,7 +185,7 @@ class Shell(App):
 
     #workspace {
         height: 1fr;
-        padding: 1;
+        padding: 0;
     }
 
     #pane-grid {
@@ -193,6 +193,7 @@ class Shell(App):
         grid-size: 1 1;
         height: 1fr;
         padding: 0;
+        grid-gutter: 1;
     }
 
     #statusbar {
@@ -208,7 +209,6 @@ class Shell(App):
 
     .pane {
         border: solid $primary;
-        margin: 0;
     }
 
     .pane:focus-within {
@@ -301,8 +301,6 @@ class Shell(App):
     def _launch_app(self, app_name: str) -> None:
         """Launch an application in a new pane."""
         placeholder = self.query_one("#pane-grid", Container)
-        for child in list(placeholder.children):
-            child.remove()
 
         if app_name == "Shell":
             content = plugins.ShellPane(classes="shell-pane")
@@ -317,7 +315,25 @@ class Shell(App):
         )
         self.panes[pane.pane_id] = pane
         placeholder.mount(pane)
+        self._reflow_grid()
         self.notify(f"Launched: {app_name}")
+
+    def _reflow_grid(self) -> None:
+        """Recalculate grid dimensions based on pane count."""
+        placeholder = self.query_one("#pane-grid", Container)
+        count = len(self.panes)
+        if count <= 1:
+            cols, rows = 1, 1
+        elif count == 2:
+            cols, rows = 2, 1
+        elif count <= 4:
+            cols, rows = 2, 2
+        elif count <= 6:
+            cols, rows = 3, 2
+        else:
+            cols, rows = 3, 3
+        placeholder.styles.grid_size_columns = cols
+        placeholder.styles.grid_size_rows = rows
 
     def action_help(self) -> None:
         self.notify("TankuOS — Retro Desktop | F1: Help | F2: Theme | F3: Apps | TankuOS → Exit to Quit")
@@ -342,6 +358,7 @@ class Shell(App):
         if pane_id in self.panes:
             self.panes[pane_id].remove()
             del self.panes[pane_id]
+            self._reflow_grid()
 
     def focus_pane(self, pane_id: str) -> None:
         """Focus a specific pane."""
