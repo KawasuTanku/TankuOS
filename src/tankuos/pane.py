@@ -21,30 +21,21 @@ class Pane(Widget):
     Pane {
         height: 1fr;
         border: solid $primary;
-        padding: 0;
-    }
-
-    Pane:focus-within {
-        border: solid $accent;
-    }
-
-    #titlebar {
-        height: 1;
-    }
-
-    .pane-content {
-        height: 1fr;
     }
     """
+
+    can_focus = True
 
     def __init__(self, title: str, content: Widget, pane_id: str = "", **kwargs) -> None:
         super().__init__(**kwargs)
         self.pane_id = pane_id or f"pane-{id(self)}"
         self.title = title
         self.content_widget = content
+        self._is_focused = False
 
     def compose(self) -> ComposeResult:
-        yield Static("", id="titlebar")
+        titlebar = Static("", id="titlebar")
+        yield titlebar
         self.content_widget.add_class("pane-content")
         yield self.content_widget
 
@@ -54,24 +45,34 @@ class Pane(Widget):
     def on_resize(self) -> None:
         self._render_titlebar()
 
+    def set_focused(self, value: bool) -> None:
+        """Set focus state and update visuals."""
+        self._is_focused = value
+        self._render_titlebar()
+
     def _render_titlebar(self) -> None:
         width = self.size.width or 80
         padding = max(0, width - len(self.title) - 4)
         text = Text()
         text.append(" ")
-        text.append(self.title, style="bold white on blue")
-        text.append(" " * padding, style="on blue")
-        text.append("[x]", style="bold red on blue")
+        if self._is_focused:
+            text.append(self.title, style="bold white on green")
+            text.append(" " * padding, style="on green")
+            text.append("[x]", style="bold red on green")
+        else:
+            text.append(self.title, style="bold white on blue")
+            text.append(" " * padding, style="on blue")
+            text.append("[x]", style="bold red on blue")
         titlebar = self.query_one("#titlebar", Static)
         titlebar.update(text)
 
     def on_click(self, event):
-        widget = event.widget
-        if widget and widget.id == "titlebar":
-            x = event.x
-            width = self.size.width or 80
-            if x >= width - 4:
-                self.post_message(ClosePaneRequest(self.pane_id))
+        """Handle clicks on this widget."""
+        # Check if the click was on the titlebar
+        x = event.x
+        width = self.size.width or 80
+        if x >= width - 4:
+            self.post_message(ClosePaneRequest(self.pane_id))
 
     def on_close_pane_request(self, message: ClosePaneRequest) -> None:
         if message.pane_id == self.pane_id:

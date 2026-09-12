@@ -198,12 +198,17 @@ class Shell(App):
         height: 1fr;
     }
     
-    #pane-grid > Horizontal > Vertical {
+    #pane-grid > Horizontal > Pane {
         width: 1fr;
+        height: 1fr;
         border: solid $primary;
     }
     
-    #pane-grid > Horizontal > Vertical:focus-within {
+    #pane-grid > Horizontal > Pane:focus-within {
+        border: solid $accent;
+    }
+    
+    #pane-grid > Horizontal > Pane.focused {
         border: solid $accent;
     }
 
@@ -358,11 +363,7 @@ class Shell(App):
                         content=pane_info["content"],
                         pane_id=pane_id,
                     )
-                    cell = Vertical()
-                    cell.styles.width = "1fr"
-                    cell.styles.height = "1fr"
-                    row.mount(cell)
-                    cell.mount(pane)
+                    row.mount(pane)
 
     def action_help(self) -> None:
         self.notify("TankuOS — Retro Desktop | F1: Help | F2: Theme | F3: Apps | TankuOS → Exit to Quit")
@@ -387,9 +388,19 @@ class Shell(App):
             del self.panes[pane_id]
             self._rebuild_grid()
 
-    def focus_pane(self, pane_id: str) -> None:
-        """Focus a specific pane."""
-        pass  # TODO: implement focus tracking
+    def focus_pane_by_id(self, pane_id: str) -> None:
+        """Focus a specific pane by ID, unfocus all others."""
+        # Unfocus all panes
+        grid = self.query_one("#pane-grid", Container)
+        for pane in grid.query(Pane):
+            pane.set_focused(False)
+        
+        # Focus the requested pane
+        for pane in grid.query(Pane):
+            if pane.pane_id == pane_id:
+                pane.set_focused(True)
+                self.active_pane_id = pane_id
+                break
 
 
 def main() -> None:
