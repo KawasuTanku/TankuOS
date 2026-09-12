@@ -194,6 +194,14 @@ fn run_switch(spec: &tankuos::systems::SwitchSpec) {
 /// client exiting (and SSH disconnects).
 fn spawn_daemon() -> std::io::Result<()> {
     let exe = std::env::current_exe()?;
+    let exe = if exe.to_string_lossy().contains("(deleted)") {
+        // Binary was replaced (e.g. by the in-app updater). Fall back to the
+        // default install path so the daemon can still respawn.
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join(".local/bin/tankuos")
+    } else {
+        exe
+    };
     tankuos::dbg_log(&format!("daemon: spawning {} --daemon", exe.display()));
     std::process::Command::new(exe)
         .arg("--daemon")
