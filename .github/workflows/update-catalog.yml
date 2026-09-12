@@ -1,0 +1,49 @@
+name: Catalog check
+
+# Checks awesome-tuis weekly for newly-added TUIs and, if any are found, opens
+# (or updates) a GitHub issue so a maintainer can review and update the catalog
+# manually. It never commits — updates stay under human control.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Fetch awesome-tuis README
+        run: curl -fsSL https://raw.githubusercontent.com/rothgar/awesome-tuis/master/README.md -o /tmp/awesome-tuis.md
+
+      - name: Regenerate catalog (working copy only — not committed)
+        run: python3 scripts/gen_catalog.py /tmp/awesome-tuis.md
+
+      - name: Detect new apps and alert via issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COUNT="$(python3 scripts/new_apps_report.py /tmp/new_apps.md)"
+          echo "New apps detected: $COUNT"
+          if [ "$COUNT" -gt 0 ]; then
+            gh label create catalog-update -c FBCA04 -d "New apps from awesome-tuis" 2>/dev/null || true
+            EXISTING="$(gh issue list --label catalog-update --state open --json number --jq '.[0].number // empty')"
+            if [ -n "$EXISTING" ]; then
+              gh issue comment "$EXISTING" --body-file /tmp/new_apps.md
+            else
+              gh issue create \
+                --title "Catalog: ${COUNT} new TUI(s) available in awesome-tuis" \
+                --label catalog-update \
+                --body-file /tmp/new_apps.md
+            fi
+          fi

@@ -1,0 +1,475 @@
+use crate::buffer::CellBuffer;
+use crate::cell::{Cell, CellAttrs, Rgba};
+use alacritty_terminal::event::{Event, EventListener};
+use alacritty_terminal::index::{Column, Line};
+use alacritty_terminal::term::cell::Flags;
+use alacritty_terminal::term::test::TermSize;
+use alacritty_terminal::term::Config;
+use alacritty_terminal::vte::ansi::{Color as AColor, NamedColor, Processor, StdSyncHandler};
+use alacritty_terminal::Term;
+use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+use std::io::{Read, Write};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
+/// Default foreground/background used for cells that reference the terminal's
+/// "default" colors (and as a fallback for unresolved named colors).
+const DEFAULT_FG: Rgba = Rgba { r: 200, g: 208, b: 220, a: 255 };
+// Matches the window panel color (wm::WIN_BG) so an app's default-background
+// cells blend seamlessly into the window rather than showing a mismatched fill.
+const DEFAULT_BG: Rgba = Rgba { r: 17, g: 20, b: 29, a: 255 };
+
+/// Forwards the embedded terminal's replies back to the child over the PTY.
+///
+/// Apps that probe the terminal — e.g. `tetris` moving the cursor to `999;999`
+/// and sending `ESC[6n` to learn the screen size, or a primary device-attributes
+/// query — expect an answer on their stdin. The emulator generates those replies
+/// as [`Event::PtyWrite`]; without forwarding them the app sees silence (tetris
+/// concluded "terminal too small" and exited). Tuiui still polls the grid via
+/// [`AppInstance::snapshot`]; this only handles the write-back replies.
+#[derive(Clone)]
+struct PtyResponder {
+    writer: Arc<Mutex<Box<dyn Write + Send>>>,
+    /// Bell rings since last drain (surfaced as dock/tray notifications).
+    bells: Arc<std::sync::atomic::AtomicU32>,
+    /// Last OSC-52 clipboard store from the app (forwarded to the host terminal).
+    clip: Arc<Mutex<Option<String>>>,
+}
+impl EventListener for PtyResponder {
+    fn send_event(&self, event: Event) {
+        match event {
+            Event::PtyWrite(text) => {
+                if let Ok(mut w) = self.writer.lock() {
+                    let _ = w.write_all(text.as_bytes());
+                    let _ = w.flush();
+                }
+            }
+            Event::Bell => {
+                self.bells.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+            Event::ClipboardStore(_, text) => {
+                if let Ok(mut c) = self.clip.lock() {
+                    *c = Some(text);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Hosts a child process running inside a pseudo-terminal.
+///
+/// The child's output is parsed by a full [`alacritty_terminal`] emulator on a
+/// dedicated reader thread (chosen over a minimal parser because the desktop must
+/// faithfully render demanding TUIs such as `btop`). [`snapshot`](Self::snapshot)
+/// converts the current emulator grid into a Tuiui [`CellBuffer`].
+pub struct AppInstance {
+    term: Arc<Mutex<Term<PtyResponder>>>,
+    master: Box<dyn portable_pty::MasterPty + Send>,
+    writer: Arc<Mutex<Box<dyn Write + Send>>>,
+    child: Box<dyn portable_pty::Child + Send + Sync>,
+    /// Kitty-graphics state captured from the child's output by the reader thread.
+    graphics: Arc<Mutex<crate::kittygfx::GraphicsState>>,
+    /// Bell rings + OSC-52 clipboard stores captured by the emulator's events.
+    bells: Arc<std::sync::atomic::AtomicU32>,
+    clip: Arc<Mutex<Option<String>>>,
+    cols: u16,
+    rows: u16,
+    /// Wall-clock instant the child was spawned. Used by the activity monitor to
+    /// show how long each app has been running.
+    spawned_at: Instant,
+}
+
+impl AppInstance {
+    /// Spawn `cmd` with `args` inside a PTY of size `cols × rows`.
+    ///
+    /// Returns `Err` if the PTY or the child process could not be created.
+    pub fn spawn(
+        cmd: &str,
+        args: &[String],
+        cols: i32,
+        rows: i32,
+        cwd: Option<&std::path::Path>,
+    ) -> std::io::Result<AppInstance> {
+        let (cols, rows) = (cols.max(1) as u16, rows.max(1) as u16);
+        let pty_system = native_pty_system();
+        let pair = pty_system
+            .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+        // Resolve a bare command name to an absolute path ourselves. portable-pty's
+        // own PATH search is unreliable here (a binary on $PATH still failed to
+        // launch by bare name), so we hand it the resolved path.
+        let program = resolve_program(cmd);
+        let mut builder = CommandBuilder::new(&program);
+        for a in args {
+            builder.arg(a);
+        }
+        // Inherit the parent environment so apps on the user's PATH (e.g.
+        // Homebrew binaries in /opt/homebrew/bin) launch and get HOME/LANG.
+        for (key, val) in std::env::vars() {
+            builder.env(key, val);
+        }
+        // Pin TERM/COLORTERM to what the embedded emulator implements, letting
+        // apps emit 24-bit color (captured here, re-emitted per the real terminal).
+        // TERM stays `xterm-256color` (universally present in terminfo) — using
+        // `xterm-kitty` would break ncurses apps on hosts lacking that entry. Kitty
+        // graphics support is instead advertised at runtime: the reader thread's tap
+        // answers the graphics query (`a=q`) with OK, which graphics-capable apps
+        // (yazi, timg) probe for and treat as the authoritative capability signal.
+        builder.env("TERM", "xterm-256color");
+        builder.env("COLORTERM", "truecolor");
+        // Start in the requested working directory, else the user's home.
+        match cwd {
+            Some(d) => builder.cwd(d),
+            None => {
+                if let Some(home) = dirs::home_dir() {
+                    builder.cwd(home);
+                }
+            }
+        }
+
+        let child = pair
+            .slave
+            .spawn_command(builder)
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+        drop(pair.slave);
+
+        let mut reader = pair
+            .master
+            .try_clone_reader()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+        let writer: Arc<Mutex<Box<dyn Write + Send>>> = Arc::new(Mutex::new(
+            pair.master
+                .take_writer()
+                .map_err(|e| std::io::Error::other(e.to_string()))?,
+        ));
+
+        // The emulator's reply events (DSR/DA responses) are written back to the
+        // child over the same PTY writer.
+        let bells = Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let clip: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+        let term = Arc::new(Mutex::new(Term::new(
+            Config::default(),
+            &TermSize::new(cols as usize, rows as usize),
+            PtyResponder { writer: writer.clone(), bells: bells.clone(), clip: clip.clone() },
+        )));
+
+        // Captured Kitty-graphics state, shared with the reader thread.
+        let graphics = Arc::new(Mutex::new(crate::kittygfx::GraphicsState::new()));
+
+        // Reader thread: pump PTY bytes through a graphics tap, then the emulator.
+        // The tap pulls Kitty-graphics APC sequences out of the stream (so the
+        // emulator never sees them) and records image transmissions/placements at
+        // the cursor. The `Processor` and `GraphicsTap` persist across reads so
+        // partial escape/APC sequences are handled.
+        let tclone = term.clone();
+        let gclone = graphics.clone();
+        let wclone = writer.clone();
+        std::thread::spawn(move || {
+            let mut parser = Processor::<StdSyncHandler>::new();
+            let mut tap = crate::kittygfx::GraphicsTap::new();
+            let mut buf = [0u8; 8192];
+            loop {
+                let n = match reader.read(&mut buf) {
+                    Ok(0) | Err(_) => break,
+                    Ok(n) => n,
+                };
+                let split = tap.feed(&buf[..n]);
+                if let Ok(mut t) = tclone.lock() {
+                    parser.advance(&mut *t, &split.passthrough);
+                    if !split.commands.is_empty() {
+                        let (col, row) = cursor_cell(&t);
+                        if let Ok(mut g) = gclone.lock() {
+                            for cmd in &split.commands {
+                                g.apply(cmd, col, row);
+                            }
+                            // Answer any `a=q` support queries on the PTY so apps
+                            // proceed to actually transmit graphics.
+                            if !g.queries.is_empty() {
+                                if let Ok(mut w) = wclone.lock() {
+                                    for q in g.queries.drain(..) {
+                                        let _ = w.write_all(&q);
+                                    }
+                                    let _ = w.flush();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        Ok(AppInstance { term, master: pair.master, writer, child, graphics, bells, clip, cols, rows, spawned_at: Instant::now() })
+    }
+
+    /// Bell rings since the last call (drained).
+    pub fn take_bells(&self) -> u32 {
+        self.bells.swap(0, std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// The app's latest OSC-52 clipboard store, if any (drained).
+    pub fn take_clipboard(&self) -> Option<String> {
+        self.clip.lock().ok().and_then(|mut c| c.take())
+    }
+
+    /// Convert the current emulator grid into a Tuiui [`CellBuffer`].
+    pub fn snapshot(&self) -> CellBuffer {
+        let t = self.term.lock().unwrap();
+        let grid = t.grid();
+        let mut buf = CellBuffer::new(self.cols as i32, self.rows as i32);
+        for y in 0..self.rows as i32 {
+            for x in 0..self.cols as usize {
+                let cell = &grid[Line(y)][Column(x)];
+                let ch = if cell.c == '\0' { ' ' } else { cell.c };
+                let flags = cell.flags;
+                buf.set(
+                    x as i32,
+                    y,
+                    Cell {
+                        ch,
+                        fg: resolve_color(cell.fg, DEFAULT_FG),
+                        bg: resolve_color(cell.bg, DEFAULT_BG),
+                        attrs: CellAttrs {
+                            bold: flags.contains(Flags::BOLD),
+                            italic: flags.contains(Flags::ITALIC),
+                            underline: flags.contains(Flags::UNDERLINE),
+                            inverse: flags.contains(Flags::INVERSE),
+                        },
+                    },
+                );
+            }
+        }
+        buf
+    }
+
+    /// Resize both the PTY (sends `SIGWINCH`) and the emulator grid.
+    pub fn resize(&mut self, cols: i32, rows: i32) {
+        self.cols = cols.max(1) as u16;
+        self.rows = rows.max(1) as u16;
+        let _ = self.master.resize(PtySize {
+            rows: self.rows,
+            cols: self.cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        });
+        if let Ok(mut t) = self.term.lock() {
+            t.resize(TermSize::new(self.cols as usize, self.rows as usize));
+        }
+    }
+
+    /// Forward raw input bytes to the child. Any keystroke snaps the view back
+    /// to the live bottom of the buffer (like a real terminal), so typing while
+    /// scrolled back doesn't leave you reading stale output.
+    pub fn write_input(&mut self, bytes: &[u8]) {
+        if !bytes.is_empty() {
+            if let Ok(mut t) = self.term.lock() {
+                t.scroll_display(alacritty_terminal::grid::Scroll::Bottom);
+            }
+        }
+        if let Ok(mut w) = self.writer.lock() {
+            let _ = w.write_all(bytes);
+            let _ = w.flush();
+        }
+    }
+
+    /// Scroll the scrollback view by `lines` (positive = back into history).
+    /// The next [`snapshot`](Self::snapshot) reflects it automatically, since
+    /// the grid index honours the display offset. Returns the resulting offset
+    /// (0 = pinned to the live bottom) so callers can show a scrollbar.
+    pub fn scroll(&mut self, lines: i32) -> usize {
+        if let Ok(mut t) = self.term.lock() {
+            t.scroll_display(alacritty_terminal::grid::Scroll::Delta(lines));
+            t.grid().display_offset()
+        } else {
+            0
+        }
+    }
+
+    /// Current scrollback position and total history depth, for the scrollbar:
+    /// `(display_offset, history_size)`. Offset 0 means pinned to the bottom.
+    pub fn scroll_state(&self) -> (usize, usize) {
+        use alacritty_terminal::grid::Dimensions;
+        match self.term.lock() {
+            Ok(t) => {
+                let g = t.grid();
+                // history = total buffered lines − the visible screen.
+                let history = g.total_lines().saturating_sub(g.screen_lines());
+                (g.display_offset(), history)
+            }
+            Err(_) => (0, 0),
+        }
+    }
+
+    /// The app's current terminal mouse mode (what it asked the terminal for).
+    pub fn mouse_mode(&self) -> crate::mouse::AppMouse {
+        use alacritty_terminal::term::TermMode;
+        let guard = self.term.lock().unwrap();
+        let mode = guard.mode();
+        crate::mouse::AppMouse {
+            report_click: mode.contains(TermMode::MOUSE_REPORT_CLICK),
+            report_drag: mode.contains(TermMode::MOUSE_DRAG),
+            report_motion: mode.contains(TermMode::MOUSE_MOTION),
+            sgr: mode.contains(TermMode::SGR_MOUSE),
+            utf8: mode.contains(TermMode::UTF8_MOUSE),
+            alternate_scroll: mode.contains(TermMode::ALTERNATE_SCROLL),
+            alt_screen: mode.contains(TermMode::ALT_SCREEN),
+        }
+    }
+
+    /// Kill the child process.
+    pub fn kill(&mut self) {
+        let _ = self.child.kill();
+    }
+
+    /// Whether the child process is still running.
+    pub fn is_alive(&mut self) -> bool {
+        matches!(self.child.try_wait(), Ok(None))
+    }
+
+    /// The child process's OS pid, if available. `None` when the platform can't
+    /// report one (or the child has already been reaped).
+    pub fn process_id(&self) -> Option<u32> {
+        self.child.process_id()
+    }
+
+    /// The wall-clock instant this instance was spawned.
+    pub fn spawned_at(&self) -> Instant {
+        self.spawned_at
+    }
+
+    /// Lock and return this app's captured Kitty-graphics state (placements +
+    /// decoded images), for the session to turn into image placements.
+    pub fn graphics(&self) -> std::sync::MutexGuard<'_, crate::kittygfx::GraphicsState> {
+        self.graphics.lock().unwrap()
+    }
+}
+
+/// The current cursor cell `(col, row)` of the embedded emulator — where a
+/// Kitty `a=T` transmit-and-display places its image.
+fn cursor_cell(term: &Term<PtyResponder>) -> (u16, u16) {
+    let p = term.grid().cursor.point;
+    (p.column.0 as u16, p.line.0.max(0) as u16)
+}
+
+/// Resolve a bare command name (no `/`) to an absolute path by searching `$PATH`.
+/// Returns the input unchanged if it's already a path or can't be found (so the
+/// error surfaces from the spawn rather than here).
+fn resolve_program(cmd: &str) -> String {
+    if cmd.contains('/') {
+        return cmd.to_string();
+    }
+    if let Some(path) = std::env::var_os("PATH") {
+        use std::os::unix::fs::PermissionsExt;
+        for dir in std::env::split_paths(&path) {
+            let candidate = dir.join(cmd);
+            if let Ok(meta) = std::fs::metadata(&candidate) {
+                if meta.is_file() && meta.permissions().mode() & 0o111 != 0 {
+                    return candidate.to_string_lossy().into_owned();
+                }
+            }
+        }
+    }
+    cmd.to_string()
+}
+
+/// Resolve an alacritty cell color into our [`Rgba`].
+fn resolve_color(c: AColor, default: Rgba) -> Rgba {
+    match c {
+        AColor::Spec(rgb) => Rgba::rgb(rgb.r, rgb.g, rgb.b),
+        AColor::Indexed(i) => idx_to_rgb(i),
+        AColor::Named(n) => named_to_rgb(n, default),
+    }
+}
+
+/// Map a named terminal color to RGB; `default` covers the terminal's own
+/// default fg/bg and any names we don't special-case (cursor, dim variants).
+fn named_to_rgb(n: NamedColor, default: Rgba) -> Rgba {
+    use NamedColor::*;
+    match n {
+        Foreground => DEFAULT_FG,
+        Background => DEFAULT_BG,
+        Black => idx_to_rgb(0),
+        Red => idx_to_rgb(1),
+        Green => idx_to_rgb(2),
+        Yellow => idx_to_rgb(3),
+        Blue => idx_to_rgb(4),
+        Magenta => idx_to_rgb(5),
+        Cyan => idx_to_rgb(6),
+        White => idx_to_rgb(7),
+        BrightBlack => idx_to_rgb(8),
+        BrightRed => idx_to_rgb(9),
+        BrightGreen => idx_to_rgb(10),
+        BrightYellow => idx_to_rgb(11),
+        BrightBlue => idx_to_rgb(12),
+        BrightMagenta => idx_to_rgb(13),
+        BrightCyan => idx_to_rgb(14),
+        BrightWhite => idx_to_rgb(15),
+        _ => default,
+    }
+}
+
+/// Convert an xterm 256-color index to RGB (16 base + 6×6×6 cube + grayscale ramp).
+fn idx_to_rgb(i: u8) -> Rgba {
+    const BASE: [(u8, u8, u8); 16] = [
+        (0, 0, 0), (205, 49, 49), (13, 188, 121), (229, 229, 16),
+        (36, 114, 200), (188, 63, 188), (17, 168, 205), (229, 229, 229),
+        (102, 102, 102), (241, 76, 76), (35, 209, 139), (245, 245, 67),
+        (59, 142, 234), (214, 112, 214), (41, 184, 219), (255, 255, 255),
+    ];
+    if (i as usize) < 16 {
+        let (r, g, b) = BASE[i as usize];
+        return Rgba::rgb(r, g, b);
+    }
+    if i >= 232 {
+        let v = 8 + (i - 232) * 10;
+        return Rgba::rgb(v, v, v);
+    }
+    let i = i - 16;
+    let (r, g, b) = (i / 36, (i % 36) / 6, i % 6);
+    let s = |n: u8| if n == 0 { 0 } else { 55 + n * 40 };
+    Rgba::rgb(s(r), s(g), s(b))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alacritty_terminal::vte::ansi::Processor;
+
+    /// Records the emulator's write-back replies.
+    #[derive(Clone)]
+    struct Rec(Arc<Mutex<Vec<String>>>);
+    impl EventListener for Rec {
+        fn send_event(&self, e: Event) {
+            if let Event::PtyWrite(s) = e {
+                self.0.lock().unwrap().push(s);
+            }
+        }
+    }
+
+    #[test]
+    fn resolves_bare_command_to_absolute_path() {
+        // `sh` is always on $PATH at an absolute location.
+        let p = resolve_program("sh");
+        assert!(p.contains('/'), "expected an absolute path, got {p}");
+        assert!(std::path::Path::new(&p).is_file());
+        // A path is returned unchanged.
+        assert_eq!(resolve_program("/bin/sh"), "/bin/sh");
+    }
+
+    // Apps like tetris move the cursor to 999;999 and send ESC[6n to learn the
+    // terminal size from the cursor-position report. The emulator must answer.
+    #[test]
+    fn emulator_answers_cursor_position_query() {
+        let rec = Rec(Arc::new(Mutex::new(Vec::new())));
+        let mut term = Term::new(Config::default(), &TermSize::new(80, 24), rec.clone());
+        let mut parser = Processor::<StdSyncHandler>::new();
+        parser.advance(&mut term, b"\x1b[999;999H\x1b[6n");
+        let out = rec.0.lock().unwrap();
+        assert!(
+            out.iter().any(|s| s.starts_with("\x1b[") && s.ends_with('R')),
+            "expected a cursor-position report, got {:?}",
+            *out
+        );
+    }
+}
