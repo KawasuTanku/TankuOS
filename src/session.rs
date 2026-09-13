@@ -156,6 +156,10 @@ pub enum ClientMsg {
     StoreBackspace,
     /// Store: install or launch the selected app (Enter).
     StoreActivate,
+    /// Update the selected app to the latest catalog version.
+    StoreUpdate,
+    /// Update all installed apps with available updates.
+    StoreUpdateAll,
     /// Store: close the store window (Escape).
     StoreClose,
     /// Open the settings window (or focus it if already open).
@@ -1654,7 +1658,20 @@ or a remote-side error — its authorized_keys was left untouched)",
             ClientMsg::StoreDown => { if let Some(s) = self.focused_store_mut() { s.move_down(); } }
             ClientMsg::StorePrevCategory => { if let Some(s) = self.focused_store_mut() { s.prev_category(); } }
             ClientMsg::StoreNextCategory => { if let Some(s) = self.focused_store_mut() { s.next_category(); } }
-            ClientMsg::StoreChar(c) => { if let Some(s) = self.focused_store_mut() { s.type_char(c); } }
+            ClientMsg::StoreChar(c) => {
+                if let Some(s) = self.focused_store_mut() {
+                    if let Some(action) = s.key(c) {
+                        match action {
+                            store::StoreAction::UpdateSelected => self.store_update(false),
+                            store::StoreAction::UpdateAll => self.store_update(true),
+                        }
+                    } else {
+                        s.type_char(c);
+                    }
+                }
+            }
+            ClientMsg::StoreUpdate => self.store_update(false),
+            ClientMsg::StoreUpdateAll => self.store_update(true),
             ClientMsg::StoreBackspace => { if let Some(s) = self.focused_store_mut() { s.backspace(); } }
             ClientMsg::StoreActivate => self.store_activate(),
             ClientMsg::StoreClose => {
@@ -2787,6 +2804,69 @@ or a remote-side error — its authorized_keys was left untouched)",
             );
             self.launch(format!("install: {}", app.name), "sh".into(), vec!["-lc".into(), wrapped]);
         }
+    }
+
+    /// Update installed apps. If `all`, update every app with an available
+    /// update; otherwise update only the currently selected store app.
+    fn store_update(&mut self, all: bool) {
+        let apps_to_update: Vec<String> = if all {
+            crate::catalog::catalog()
+                .iter()
+                .filter(|c| {
+                    crate::catalog::is_installed(&c.bin)
+                        && crate::catalog::app_installed_status(&c.name) == Some(false)
+                })
+                .map(|c| c.name.clone())
+                .collect()
+        } else {
+            self.focused_store_mut()
+                .and_then(|s| s.selected_app())
+                .filter(|a| crate::catalog::app_installed_status(&a.name) == Some(false))
+                .map(|a| a.name.clone())
+                .into_iter()
+                .collect()
+        };
+        for name in apps_to_update {
+            self.update_app(&name);
+        }
+    }
+
+    /// Update a single app: stop the running instance, re-run the install
+    /// recipe (which re-clones, reinstalls deps, and preserves configs).
+    fn update_app(&mut self, name: &str) {
+        if let Some(wid) = self.find_app_window(name) {
+            self.close(wid);
+        }
+        let Some(app) = crate::catalog::catalog()
+            .iter()
+            .find(|c| c.name == name)
+            .cloned()
+        else {
+            return;
+        };
+        let cmd = crate::store::install_command(&app);
+        let wrapped = format!(
+            "{cmd}; echo; echo '── update finished — close this window (✕) to refresh ──'; exec \"$SHELL\""
+        );
+        self.launch(
+            format!("update: {name}"),
+            "sh".into(),
+            vec!["-lc".into(), wrapped],
+        );
+    }
+
+    /// Find the window id of a running hosted app by name.
+    fn find_app_window(&self, name: &str) -> Option<WindowId> {
+        self.wm.z_ordered().iter().find_map(|w| {
+            if w.title.contains(name) {
+                match self.contents.get(&w.id) {
+                    Some(WinContent::App(_)) => Some(w.id),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        })
     }
 
     /// Activate a launcher entry: open the store/settings for the pinned tankuos

@@ -14,10 +14,19 @@ const DIM: Rgba = Rgba { r: 120, g: 130, b: 150, a: 255 };
 const SEL_BG: Rgba = Rgba { r: 45, g: 58, b: 85, a: 255 };
 const ACCENT: Rgba = Rgba { r: 108, g: 182, b: 255, a: 255 };
 const GREEN: Rgba = Rgba { r: 126, g: 231, b: 135, a: 255 };
+const WARNING: Rgba = Rgba { r: 230, g: 192, b: 80, a: 255 };
 const PANEL: Rgba = Rgba { r: 22, g: 26, b: 37, a: 255 };
 
 const SIDEBAR_W: i32 = 16;
 const LIST_W: i32 = 30;
+
+/// An action requested from the store UI (via key press).
+pub enum StoreAction {
+    /// Update the currently selected app.
+    UpdateSelected,
+    /// Update all installed apps with available updates.
+    UpdateAll,
+}
 
 /// Tag shown on apps flagged `cli` — a tool that prints output and exits (or
 /// needs subcommands) rather than opening a persistent full-screen TUI.
@@ -102,6 +111,17 @@ impl Store {
         self.query.pop();
         self.reset_list();
     }
+
+    /// Handle a key press that may trigger a store action (e.g. update).
+    /// Returns Some(action) if the key maps to an action, None otherwise.
+    pub fn key(&mut self, key: char) -> Option<StoreAction> {
+        match key {
+            'u' => Some(StoreAction::UpdateSelected),
+            'U' => Some(StoreAction::UpdateAll),
+            _ => None,
+        }
+    }
+
     fn reset_list(&mut self) {
         self.selected = 0;
         self.scroll = 0;
@@ -190,15 +210,29 @@ impl Store {
             }
             buf.write_str(dx + 1, h - 4, truncate(&app.homepage, dw as usize - 2), DIM, PANEL);
             // Verified-recipe badge.
+            let mut row_badge_y = h - 3;
             if let Some(r) = catalog::recipe(&app.name) {
                 if r.verified {
-                    buf.write_str(dx + 1, h - 3, &format!("\u{2713} verified \u{00B7} {}", r.method), GREEN, PANEL);
+                    buf.write_str(dx + 1, row_badge_y, &format!("\u{2713} verified \u{00B7} {}", r.method), GREEN, PANEL);
+                    row_badge_y -= 1;
                 }
             }
-            // Action hint.
+            // Update-available badge.
             let installed = catalog::is_installed(&app.bin);
-            let action = if installed { "[ Enter: Launch ]" } else { "[ Enter: Install ]" };
-            let acol = if installed { GREEN } else { ACCENT };
+            let status = catalog::app_installed_status(&app.name);
+            if status == Some(false) {
+                buf.write_str(dx + 1, row_badge_y, "\u{2713} update available", WARNING, PANEL);
+            } else if installed && status == Some(true) {
+                buf.write_str(dx + 1, row_badge_y, "\u{2713} up to date", GREEN, PANEL);
+            }
+            // Action hint.
+            let (action, acol) = if !installed {
+                ("[ Enter: Install ]", ACCENT)
+            } else if status == Some(false) {
+                ("[ Enter: Update ]", WARNING)
+            } else {
+                ("[ Enter: Launch ]", GREEN)
+            };
             buf.write_str(dx + 1, h - 2, action, acol, PANEL);
         }
 
