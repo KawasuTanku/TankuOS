@@ -8,6 +8,7 @@ set -euo pipefail
 
 REPO="KawasuTanku/TankuOS"
 BIN_DIR="${TANKUOS_BIN_DIR:-$HOME/.local/bin}"
+SHARE_DIR="${TANKUOS_SHARE_DIR:-$HOME/.local/share/TankuOS}"
 
 # Stock Debian often has wget but not curl; accept either.
 fetch() {
@@ -75,6 +76,11 @@ rm -rf "$tmp_dir"
 chmod +x "$BIN_DIR/TankuOS"
 
 echo "TankuOS: installed $tag -> $BIN_DIR/TankuOS"
+
+# Extract bundled scripts to ~/.local/share/TankuOS/scripts/
+mkdir -p "$SHARE_DIR/scripts"
+cp -f "$tmp_dir/scripts/"* "$SHARE_DIR/scripts/" 2>/dev/null || true
+chmod +x "$SHARE_DIR/scripts/"* 2>/dev/null || true
 
 # Optional dependency step
 install_optional_deps() {

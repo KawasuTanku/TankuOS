@@ -1,6 +1,6 @@
 {
   "WarpStrand-Driver": {
-    "install": "mkdir -p ~/TankuOS/Apps && bash ~/Projects/TankuOS/scripts/tankuos-app-install.sh WarpStrand-Driver ~/Projects/WarpStrand-Driver",
+    "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh WarpStrand-Driver https://github.com/KawasuTanku/WarpStrand-Driver.git",
     "method": "tankuos-app",
     "os": ["linux"],
     "requires_cwd": false,

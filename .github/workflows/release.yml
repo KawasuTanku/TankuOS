@@ -130,7 +130,13 @@ jobs:
           cargo build --release --target ${{ matrix.target }}
 
       - name: Package
-        run: tar -C target/${{ matrix.target }}/release -czf TankuOS-${{ matrix.target }}.tar.gz TankuOS
+        run: |
+          set -e
+          tmp_dir=$(mktemp -d)
+          cp target/${{ matrix.target }}/release/TankuOS "$tmp_dir/"
+          cp -r scripts "$tmp_dir/"
+          tar -czf TankuOS-${{ matrix.target }}.tar.gz -C "$tmp_dir" .
+          rm -rf "$tmp_dir"
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
