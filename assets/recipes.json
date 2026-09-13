@@ -24,11 +24,11 @@
     "verified": true
   },
   "WarpStrand-Driver": {
-    "install": "echo 'Install WarpStrand-Driver locally: tankuos-app-install warpstrand-driver ~/Projects/WarpStrand-Driver'",
-    "method": "manual",
+    "install": "mkdir -p ~/TankuOS/Apps && bash ~/Projects/TankuOS/scripts/tankuos-app-install.sh warpstrand-driver ~/Projects/WarpStrand-Driver",
+    "method": "tankuos-app",
     "os": ["linux"],
     "requires_cwd": false,
-    "tip": "Install from local source: tankuos-app-install warpstrand-driver ~/Projects/WarpStrand-Driver",
+    "tip": "Installs to ~/TankuOS/Apps/warpstrand-driver/ with isolated venv and config migration.",
     "verified": true
   }
 }
