@@ -100,31 +100,23 @@ cat > "$APP_DIR/.tankuos-meta.json" << EOF
 }
 EOF
 
-# Create run.sh wrapper
-cat > "$APP_DIR/run.sh" << 'RUNEOF'
+# Create unique bin wrapper for catalog detection
+# Must be in PATH for the store to detect it as installed
+BIN_DIR="${HOME}/.local/bin"
+mkdir -p "$BIN_DIR"
+BIN_NAME="tankuos-app-${APP_NAME}"
+BIN_PATH="$BIN_DIR/$BIN_NAME"
+cat > "$BIN_PATH" << EOF
 #!/bin/sh
-# Auto-generated run script for TankuOS app
+# TankuOS app wrapper for $APP_NAME
 set -eu
-APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_DIR="$APP_DIR"
+export XDG_CONFIG_HOME="\$APP_DIR/configs"
 source "$APP_DIR/.venv/bin/activate"
 cd "$APP_DIR"
-RUNEOF
-
-# Add app-specific run command
-case "$APP_NAME" in
-    warpstrand-driver)
-        cat >> "$APP_DIR/run.sh" << 'RUNEOF'
-exec python "$APP_DIR/warpwrap.py" "$@"
-RUNEOF
-        ;;
-    *)
-        cat >> "$APP_DIR/run.sh" << 'RUNEOF'
-exec python "$APP_DIR/main.py" "$@"
-RUNEOF
-        ;;
-esac
-
-chmod +x "$APP_DIR/run.sh"
+exec python "$APP_DIR/warpwrap.py" "\$@"
+EOF
+chmod +x "$BIN_PATH"
 
 echo ""
 echo "Installed $APP_NAME to $APP_DIR"

@@ -1,36 +1,44 @@
 [
   {
     "name": "Retirement",
-    "bin": "retirement-tui",
+    "bin": "tankuos-app-retirement",
+    "args": [],
     "category": "Finance",
     "description": "Portfolio tracker for Robinhood IRAs — fetch holdings, view gain/loss, diverging ASCII bar chart.",
-    "homepage": "https://github.com/KawasuTanku/Retirement"
+    "homepage": "https://github.com/KawasuTanku/Retirement",
+    "version": "0.1.0"
   },
   {
     "name": "Monster",
-    "bin": "monster-tui",
+    "bin": "tankuos-app-monster",
+    "args": [],
     "category": "Finance",
     "description": "Energy-drink P&L tracker with accrual accounting.",
-    "homepage": "https://github.com/KawasuTanku/Monster"
+    "homepage": "https://github.com/KawasuTanku/Monster",
+    "version": "0.1.0"
   },
   {
     "name": "MailVault",
-    "bin": "mailvault",
+    "bin": "tankuos-app-mailvault",
+    "args": [],
     "category": "Email",
     "description": "Local email archive with full-text search. Syncs IMAP accounts via himalaya into SQLite.",
-    "homepage": "https://github.com/KawasuTanku/MailVault"
+    "homepage": "https://github.com/KawasuTanku/MailVault",
+    "version": "0.1.0"
   },
   {
     "name": "MontcoMonitor",
-    "bin": "montco-tui",
+    "bin": "tankuos-app-montco-monitor",
+    "args": [],
     "category": "Monitoring",
     "description": "VoIP phone registration monitor via REST API. Supports Grandstream and Yealink phones.",
-    "homepage": "https://github.com/KawasuTanku/MontcoMonitor"
+    "homepage": "https://github.com/KawasuTanku/MontcoMonitor",
+    "version": "0.1.0"
   },
   {
     "name": "WarpStrand-Driver",
-    "bin": "bash",
-    "args": ["-c", "export XDG_CONFIG_HOME=~/TankuOS/Apps/warpstrand-driver/configs && source ~/TankuOS/Apps/warpstrand-driver/.venv/bin/activate && python ~/TankuOS/Apps/warpstrand-driver/warpwrap.py"],
+    "bin": "tankuos-app-warpstrand-driver",
+    "args": [],
     "category": "Games",
     "description": "Auto-player for WarpStrand MUD with split-screen TUI. Rules-driven character automation.",
     "homepage": "https://github.com/KawasuTanku/WarpStrand-Driver",
