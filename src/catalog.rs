@@ -34,6 +34,9 @@ pub struct CatalogApp {
     /// when the app is installed. Empty for most apps.
     #[serde(default)]
     pub variants: Vec<Variant>,
+    /// App version (semver). Used to detect updates for installed apps.
+    #[serde(default)]
+    pub version: String,
 }
 
 /// An alternate way to launch a catalogued app: same binary, different
@@ -137,6 +140,28 @@ pub fn requires_cwd_for(name_or_bin: &str) -> Option<bool> {
         c.name.eq_ignore_ascii_case(name_or_bin) || c.bin.eq_ignore_ascii_case(name_or_bin)
     })?;
     Some(recipe(&c.name).map(|r| r.requires_cwd).unwrap_or(false))
+}
+
+/// Check if an app is installed and up-to-date.
+/// Returns Some(true) if installed and up-to-date, Some(false) if update available,
+/// None if not installed.
+pub fn app_installed_status(name: &str) -> Option<bool> {
+    let apps_dir = std::env::var("HOME").ok().map(|h| {
+        std::path::PathBuf::from(h).join("TankuOS").join("Apps").join(name)
+    })?;
+    let meta_file = apps_dir.join(".tankuos-meta.json");
+    if !meta_file.exists() {
+        return None;
+    }
+    // Read installed version from meta file
+    let installed = std::fs::read_to_string(&meta_file).ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+        .and_then(|v| v.get("version")?.as_str().map(String::from))?;
+    // Read catalog version
+    let catalog_version = catalog().iter()
+        .find(|c| c.name.eq_ignore_ascii_case(name))
+        .map(|c| c.version.clone())?;
+    Some(installed == catalog_version)
 }
 
 /// Whether a known app is a CLI tool (not a persistent TUI), by display name or
