@@ -101,10 +101,10 @@ cat > "$APP_DIR/.tankuos-meta.json" << EOF
 EOF
 
 # Create unique bin wrapper for catalog detection
-# Must be in PATH for the store to detect it as installed
+# Name matches the project/repo name exactly
 BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
-BIN_NAME="tankuos-app-${APP_NAME}"
+BIN_NAME="$APP_NAME"
 BIN_PATH="$BIN_DIR/$BIN_NAME"
 cat > "$BIN_PATH" << 'WRAPPER'
 #!/bin/sh

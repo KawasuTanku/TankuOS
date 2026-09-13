@@ -1,7 +1,7 @@
 [
   {
     "name": "Retirement",
-    "bin": "tankuos-app-retirement",
+    "bin": "retirement",
     "args": [],
     "category": "Finance",
     "description": "Portfolio tracker for Robinhood IRAs — fetch holdings, view gain/loss, diverging ASCII bar chart.",
@@ -10,7 +10,7 @@
   },
   {
     "name": "Monster",
-    "bin": "tankuos-app-monster",
+    "bin": "monster",
     "args": [],
     "category": "Finance",
     "description": "Energy-drink P&L tracker with accrual accounting.",
@@ -19,7 +19,7 @@
   },
   {
     "name": "MailVault",
-    "bin": "tankuos-app-mailvault",
+    "bin": "mailvault",
     "args": [],
     "category": "Email",
     "description": "Local email archive with full-text search. Syncs IMAP accounts via himalaya into SQLite.",
@@ -28,7 +28,7 @@
   },
   {
     "name": "MontcoMonitor",
-    "bin": "tankuos-app-montco-monitor",
+    "bin": "montco-monitor",
     "args": [],
     "category": "Monitoring",
     "description": "VoIP phone registration monitor via REST API. Supports Grandstream and Yealink phones.",
@@ -37,7 +37,7 @@
   },
   {
     "name": "WarpStrand-Driver",
-    "bin": "tankuos-app-warpstrand-driver",
+    "bin": "warpstrand-driver",
     "args": [],
     "category": "Games",
     "description": "Auto-player for WarpStrand MUD with split-screen TUI. Rules-driven character automation.",
