@@ -23,12 +23,12 @@
     "tip": "Run 'mailvault sync' after install to do initial IMAP sync. Config lives in ~/.config/mailvault/.",
     "verified": true
   },
-  "MontcoMonitor": {
-    "install": "pip install git+https://github.com/KawasuTanku/MontcoMonitor.git",
-    "method": "pip",
-    "os": ["linux", "macos"],
+  "WarpStrand-Driver": {
+    "install": "echo 'Install WarpStrand-Driver locally: tankuos-app-install warpstrand-driver ~/Projects/WarpStrand-Driver'",
+    "method": "manual",
+    "os": ["linux"],
     "requires_cwd": false,
-    "tip": "Create ~/.config/monitor/phones.toml with your VoIP phone IPs before first run.",
+    "tip": "Install from local source: tankuos-app-install warpstrand-driver ~/Projects/WarpStrand-Driver",
     "verified": true
   }
 }
