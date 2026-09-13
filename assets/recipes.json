@@ -1,34 +1,10 @@
 {
-  "Retirement": {
-    "install": "pip install git+https://github.com/KawasuTanku/Retirement.git",
-    "method": "pip",
-    "os": ["linux", "macos"],
-    "requires_cwd": false,
-    "tip": "Configure Robinhood credentials in ~/.config/retirement/config.toml before first run.",
-    "verified": true
-  },
-  "Monster": {
-    "install": "pip install git+https://github.com/KawasuTanku/Monster.git",
-    "method": "pip",
-    "os": ["linux", "macos"],
-    "requires_cwd": false,
-    "tip": "Configure database path in config if not using default SQLite location.",
-    "verified": true
-  },
-  "MailVault": {
-    "install": "pip install git+https://github.com/KawasuTanku/MailVault.git",
-    "method": "pip",
-    "os": ["linux", "macos"],
-    "requires_cwd": false,
-    "tip": "Run 'mailvault sync' after install to do initial IMAP sync. Config lives in ~/.config/mailvault/.",
-    "verified": true
-  },
   "WarpStrand-Driver": {
-    "install": "mkdir -p ~/TankuOS/Apps && bash ~/Projects/TankuOS/scripts/tankuos-app-install.sh warpstrand-driver ~/Projects/WarpStrand-Driver",
+    "install": "mkdir -p ~/TankuOS/Apps && bash ~/Projects/TankuOS/scripts/tankuos-app-install.sh WarpStrand-Driver ~/Projects/WarpStrand-Driver",
     "method": "tankuos-app",
     "os": ["linux"],
     "requires_cwd": false,
-    "tip": "Installs to ~/TankuOS/Apps/warpstrand-driver/ with isolated venv and config migration.",
+    "tip": "Installs to ~/TankuOS/Apps/WarpStrand-Driver/ with isolated venv and config migration.",
     "verified": true
   }
 }

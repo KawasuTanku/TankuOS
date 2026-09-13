@@ -16,10 +16,10 @@ if [ -z "$APP_NAME" ]; then
     echo ""
     echo "Examples:"
     echo "  # Install from local path"
-    echo "  tankuos-app-install warpstrand-driver ~/Projects/WarpStrand-Driver"
+    echo "  tankuos-app-install WarpStrand-Driver ~/Projects/WarpStrand-Driver"
     echo ""
     echo "  # Install from GitHub"
-    echo "  tankuos-app-install warpstrand-driver https://github.com/KawasuTanku/WarpStrand-Driver.git"
+    echo "  tankuos-app-install WarpStrand-Driver https://github.com/KawasuTanku/WarpStrand-Driver.git"
     echo ""
     echo "  # Install multiple apps from catalog"
     echo "  tankuos-app-install-all"
@@ -71,7 +71,7 @@ fi
 
 # Migrate configs (app-specific)
 case "$APP_NAME" in
-    warpstrand-driver)
+    WarpStrand-Driver)
         mkdir -p "$CONFIGS_DIR/warpstrand"
         if [ -f ~/.config/warpstrand/client.yaml ]; then
             echo "Migrating WarpStrand config..."

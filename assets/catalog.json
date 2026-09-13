@@ -1,41 +1,5 @@
 [
   {
-    "name": "Retirement",
-    "bin": "Retirement",
-    "args": [],
-    "category": "Finance",
-    "description": "Portfolio tracker for Robinhood IRAs — fetch holdings, view gain/loss, diverging ASCII bar chart.",
-    "homepage": "https://github.com/KawasuTanku/Retirement",
-    "version": "0.1.0"
-  },
-  {
-    "name": "Monster",
-    "bin": "Monster",
-    "args": [],
-    "category": "Finance",
-    "description": "Energy-drink P&L tracker with accrual accounting.",
-    "homepage": "https://github.com/KawasuTanku/Monster",
-    "version": "0.1.0"
-  },
-  {
-    "name": "MailVault",
-    "bin": "MailVault",
-    "args": [],
-    "category": "Email",
-    "description": "Local email archive with full-text search. Syncs IMAP accounts via himalaya into SQLite.",
-    "homepage": "https://github.com/KawasuTanku/MailVault",
-    "version": "0.1.0"
-  },
-  {
-    "name": "MontcoMonitor",
-    "bin": "MontcoMonitor",
-    "args": [],
-    "category": "Monitoring",
-    "description": "VoIP phone registration monitor via REST API. Supports Grandstream and Yealink phones.",
-    "homepage": "https://github.com/KawasuTanku/MontcoMonitor",
-    "version": "0.1.0"
-  },
-  {
     "name": "WarpStrand-Driver",
     "bin": "WarpStrand-Driver",
     "args": [],
