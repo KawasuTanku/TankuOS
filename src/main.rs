@@ -18,24 +18,24 @@ use std::io::Write;
 use std::os::unix::net::UnixStream;
 use std::os::unix::process::CommandExt;
 use std::time::Duration;
-use tankuos::protocol::socket_path;
+use TankuOS::protocol::socket_path;
 
 fn main() -> std::io::Result<()> {
     let mut args = std::env::args().skip(1);
     let cmd = args.next();
     let rest: Vec<String> = args.collect();
     match cmd.as_deref() {
-        Some("--daemon") => tankuos::daemon::run(),
-        Some("--apphost") => tankuos::apphost::server::run(),
+        Some("--daemon") => TankuOS::daemon::run(),
+        Some("--apphost") => TankuOS::apphost::server::run(),
         Some("kill") => kill(),
         Some("kill-app") => kill_app(&rest),
         Some("ps") => ps(),
         Some("attach") => attach(false),
         Some("reload") => reload(),
         Some("service") => match rest.first().map(String::as_str) {
-            Some("install") => tankuos::service::install(),
-            Some("uninstall") => tankuos::service::uninstall(),
-            Some("status") | None => tankuos::service::status(),
+            Some("install") => TankuOS::service::install(),
+            Some("uninstall") => TankuOS::service::uninstall(),
+            Some("status") | None => TankuOS::service::status(),
             Some(other) => {
                 eprintln!("tankuos service: unknown '{other}' (try: install, uninstall, status)");
                 Ok(())
@@ -49,18 +49,18 @@ fn main() -> std::io::Result<()> {
             };
             let args: Vec<String> = rest.collect();
             let name = command.rsplit('/').next().unwrap_or(&command).to_string();
-            ctl(&tankuos::session::ClientMsg::Launch { name, command, args })
+            ctl(&TankuOS::session::ClientMsg::Launch { name, command, args })
         }
-        Some("tile") => ctl(&tankuos::session::ClientMsg::TileAll),
+        Some("tile") => ctl(&TankuOS::session::ClientMsg::TileAll),
         Some("theme") => match std::env::args().nth(2) {
-            Some(name) => ctl(&tankuos::session::ClientMsg::SetTheme(name)),
+            Some(name) => ctl(&TankuOS::session::ClientMsg::SetTheme(name)),
             None => {
-                eprintln!("usage: tankuos theme <{}>", tankuos::theme::PRESETS.join("|"));
+                eprintln!("usage: tankuos theme <{}>", TankuOS::theme::PRESETS.join("|"));
                 Ok(())
             }
         },
         Some("msg") => match std::env::args().nth(2) {
-            Some(json) => match serde_json::from_str::<tankuos::session::ClientMsg>(&json) {
+            Some(json) => match serde_json::from_str::<TankuOS::session::ClientMsg>(&json) {
                 Ok(msg) => ctl(&msg),
                 Err(e) => {
                     eprintln!("tankuos msg: not a valid ClientMsg: {e}");
@@ -84,7 +84,7 @@ fn main() -> std::io::Result<()> {
 
 /// Send one control message to the running daemon (used by `tankuos launch/tile/
 /// theme/msg` — and by the desktop assistant to drive the UI).
-fn ctl(msg: &tankuos::session::ClientMsg) -> std::io::Result<()> {
+fn ctl(msg: &TankuOS::session::ClientMsg) -> std::io::Result<()> {
     if send_control(msg)? {
         println!("tankuos: sent");
     } else {
@@ -116,19 +116,19 @@ fn attach(spawn_if_missing: bool) -> std::io::Result<()> {
             }
         }
         let stream = UnixStream::connect(&path)?;
-        match tankuos::client::run(stream)? {
-            tankuos::client::ClientExit::Detached => return Ok(()),
-            tankuos::client::ClientExit::Switch(spec) => {
+        match TankuOS::client::run(stream)? {
+            TankuOS::client::ClientExit::Detached => return Ok(()),
+            TankuOS::client::ClientExit::Switch(spec) => {
                 // Run ssh (and any first-time setup) in the real terminal; when
                 // the remote session ends, loop to re-attach to the local
                 // daemon — its apps kept running the whole time.
                 run_switch(&spec);
                 continue;
             }
-            tankuos::client::ClientExit::Reload => {
+            TankuOS::client::ClientExit::Reload => {
                 // The daemon is restarting; wait briefly for the old socket to
                 // drop, then loop to spawn/connect the fresh daemon.
-                tankuos::dbg_log("client: daemon reload — waiting for old socket to drop, then respawning");
+                TankuOS::dbg_log("client: daemon reload — waiting for old socket to drop, then respawning");
                 for _ in 0..100 {
                     if UnixStream::connect(socket_path()).is_err() { break; }
                     std::thread::sleep(Duration::from_millis(20));
@@ -143,7 +143,7 @@ fn attach(spawn_if_missing: bool) -> std::io::Result<()> {
 /// stdio so password and host-key prompts are fully interactive. The setup
 /// password (if any) is passed via the `SSHPASS` env var — never on a command
 /// line and never written anywhere.
-fn run_switch(spec: &tankuos::systems::SwitchSpec) {
+fn run_switch(spec: &TankuOS::systems::SwitchSpec) {
     println!(
         "tankuos: switching to {} ({}{}){}…",
         spec.name,
@@ -151,13 +151,13 @@ fn run_switch(spec: &tankuos::systems::SwitchSpec) {
         spec.port.map(|p| format!(":{p}")).unwrap_or_default(),
         if spec.setup { " — first-time setup" } else { "" },
     );
-    let script = tankuos::systems::switch_script(spec);
+    let script = TankuOS::systems::switch_script(spec);
     // With TANKUOS_DEBUG set, show exactly what will run (the password is never
     // embedded in the script) and mirror it to ~/tankuos-debug.log.
     if std::env::var_os("TANKUOS_DEBUG").is_some() {
         eprintln!("tankuos: switch script:\n{script}");
     }
-    tankuos::dbg_log(&format!(
+    TankuOS::dbg_log(&format!(
         "switch: name={} host={} port={:?} theme={:?} setup={} password={}",
         spec.name, spec.host, spec.port, spec.theme, spec.setup,
         if spec.password.is_some() { "yes (via SSHPASS)" } else { "no" },
@@ -169,16 +169,16 @@ fn run_switch(spec: &tankuos::systems::SwitchSpec) {
     }
     match cmd.status() {
         Ok(status) if status.success() => {
-            tankuos::dbg_log("switch: remote session ended cleanly");
+            TankuOS::dbg_log("switch: remote session ended cleanly");
             println!("tankuos: remote session ended — back to this machine.");
         }
         Ok(status) => {
-            tankuos::dbg_log(&format!("switch: ended with {status}"));
+            TankuOS::dbg_log(&format!("switch: ended with {status}"));
             eprintln!("tankuos: switch to {} ended with {status} — back to this machine.", spec.name);
             eprintln!("tankuos: (re-run with TANKUOS_DEBUG=1 to see the exact script; log: ~/tankuos-debug.log)");
         }
         Err(e) => {
-            tankuos::dbg_log(&format!("switch: could not run sh/ssh: {e}"));
+            TankuOS::dbg_log(&format!("switch: could not run sh/ssh: {e}"));
             eprintln!("tankuos: could not run ssh: {e}");
         }
     }
@@ -202,7 +202,7 @@ fn spawn_daemon() -> std::io::Result<()> {
     } else {
         exe
     };
-    tankuos::dbg_log(&format!("daemon: spawning {} --daemon", exe.display()));
+    TankuOS::dbg_log(&format!("daemon: spawning {} --daemon", exe.display()));
     std::process::Command::new(exe)
         .arg("--daemon")
         .stdin(std::process::Stdio::null())
@@ -244,11 +244,11 @@ fn send_and_drain(stream: &mut UnixStream, bytes: &[u8]) -> std::io::Result<()> 
 /// while attached), and also poke the main socket so an *unattached* daemon —
 /// blocked in `accept()` — wakes and re-checks the control flag (this also covers
 /// an older daemon that predates the control socket).
-fn send_control(msg: &tankuos::session::ClientMsg) -> std::io::Result<bool> {
+fn send_control(msg: &TankuOS::session::ClientMsg) -> std::io::Result<bool> {
     let mut buf = serde_json::to_vec(msg).map_err(std::io::Error::other)?;
     buf.push(b'\n');
     let mut reached = false;
-    if let Ok(mut s) = UnixStream::connect(tankuos::protocol::daemon_ctl_path()) {
+    if let Ok(mut s) = UnixStream::connect(TankuOS::protocol::daemon_ctl_path()) {
         let _ = send_and_drain(&mut s, &buf);
         reached = true;
     }
@@ -265,7 +265,7 @@ fn send_control(msg: &tankuos::session::ClientMsg) -> std::io::Result<bool> {
 /// Tell a running daemon to reload its frontend (apps keep running via the
 /// apphost). An attached client reconnects on its own.
 fn reload() -> std::io::Result<()> {
-    if send_control(&tankuos::session::ClientMsg::Reload)? {
+    if send_control(&TankuOS::session::ClientMsg::Reload)? {
         println!("tankuos: reload requested");
     } else {
         println!("tankuos: no daemon running");
@@ -275,7 +275,7 @@ fn reload() -> std::io::Result<()> {
 
 /// Tell a running daemon to shut down, and stop the apphost.
 fn kill() -> std::io::Result<()> {
-    if send_control(&tankuos::session::ClientMsg::Shutdown)? {
+    if send_control(&TankuOS::session::ClientMsg::Shutdown)? {
         println!("tankuos: shutdown requested");
     } else {
         println!("tankuos: no daemon running");
@@ -283,8 +283,8 @@ fn kill() -> std::io::Result<()> {
     // Also stop the apphost directly. When a daemon is attached it shuts the
     // apphost down in-band; this covers the case where the apphost is running
     // with no daemon (e.g. the per-user service apphost on its own).
-    if let Ok(mut s) = UnixStream::connect(tankuos::protocol::apphost_socket_path()) {
-        let req = tankuos::apphost::proto::HostReq::Shutdown;
+    if let Ok(mut s) = UnixStream::connect(TankuOS::protocol::apphost_socket_path()) {
+        let req = TankuOS::apphost::proto::HostReq::Shutdown;
         if let Ok(mut buf) = serde_json::to_vec(&req) {
             buf.push(b'\n');
             let _ = send_and_drain(&mut s, &buf);
@@ -323,14 +323,14 @@ fn format_cmdline(cmd: &str, args: &[String]) -> String {
 /// and drains any non-AppList events that arrive between the request and
 /// reply. Bounded to a small event count so a pre-v2 apphost (which silently
 /// ignores `ListApps`) cannot hang the CLI indefinitely.
-fn fetch_app_list() -> std::io::Result<Vec<tankuos::apphost::AppListEntry>> {
-    use tankuos::apphost::proto::{send, HostEvt, HostReq};
+fn fetch_app_list() -> std::io::Result<Vec<TankuOS::apphost::AppListEntry>> {
+    use TankuOS::apphost::proto::{send, HostEvt, HostReq};
     // The on-wire variant that introduced ListApps. Kept inline (instead of
     // imported from `PROTO_VERSION`) so the CLI's behavior against a pre-v2
     // apphost is independent of the running binary's PROTO_VERSION (which
     // changes as the apphost grows new fields).
     const LIST_APPS_MIN_PROTO: u32 = 2;
-    let path = tankuos::protocol::apphost_socket_path();
+    let path = TankuOS::protocol::apphost_socket_path();
     let s = UnixStream::connect(&path).unwrap_or_else(|_| {
         eprintln!("tankuos: no apphost running (start it with `tankuos`)");
         std::process::exit(1);
@@ -342,7 +342,7 @@ fn fetch_app_list() -> std::io::Result<Vec<tankuos::apphost::AppListEntry>> {
     //   2. Get an honest proto version to report.
     // A pre-v2 apphost that predates the `proto` field reports `0`.
     let mut r = std::io::BufReader::new(s.try_clone().unwrap());
-    let proto: u32 = match tankuos::apphost::proto::recv::<HostEvt, _>(&mut r)? {
+    let proto: u32 = match TankuOS::apphost::proto::recv::<HostEvt, _>(&mut r)? {
         Some(HostEvt::Roster { proto, .. }) => proto,
         Some(_) => {
             // First event isn't a Roster? Unexpected but the apphost might
@@ -372,7 +372,7 @@ fn fetch_app_list() -> std::io::Result<Vec<tankuos::apphost::AppListEntry>> {
     // ceiling that still aborts in well under a second on a misbehaving peer.
     const MAX_DRAIN: usize = 64;
     for _ in 0..MAX_DRAIN {
-        let evt: HostEvt = match tankuos::apphost::proto::recv(&mut r)? {
+        let evt: HostEvt = match TankuOS::apphost::proto::recv(&mut r)? {
             Some(e) => e,
             None => {
                 eprintln!("tankuos: apphost closed before replying");
@@ -433,7 +433,7 @@ fn ps() -> std::io::Result<()> {
 /// live apps need an explicit id. Errors clearly when the apphost isn't
 /// running.
 fn kill_app(args: &[String]) -> std::io::Result<()> {
-    use tankuos::apphost::proto::{send, HostReq};
+    use TankuOS::apphost::proto::{send, HostReq};
     let target = match args.first().map(String::as_str) {
         Some(t) => t,
         None => {
@@ -473,7 +473,7 @@ fn kill_app(args: &[String]) -> std::io::Result<()> {
     // Reconnect for each Kill — the previous connection's reader consumed
     // the ListApps reply (and the side-reader can't share a socket safely),
     // so the cleanest path is one short-lived connection per Kill.
-    let path = tankuos::protocol::apphost_socket_path();
+    let path = TankuOS::protocol::apphost_socket_path();
     for id in &to_kill {
         let mut s = match UnixStream::connect(&path) {
             Ok(s) => s,
