@@ -32,6 +32,10 @@ pub fn run() -> std::io::Result<()> {
     std::fs::set_permissions(&path, Permissions::from_mode(0o600))?;
     crate::dbg_log("apphost: listening");
 
+    // Read theme from config so hosted apps inherit the active palette.
+    let cfg = crate::config::Config::load();
+    crate::theme::set(&cfg.theme);
+
     let mut local = LocalAppHost::new();
     let mut shutdown = false;
 
