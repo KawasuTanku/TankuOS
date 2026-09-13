@@ -26,5 +26,14 @@
     "category": "Monitoring",
     "description": "VoIP phone registration monitor via REST API. Supports Grandstream and Yealink phones.",
     "homepage": "https://github.com/KawasuTanku/MontcoMonitor"
+  },
+  {
+    "name": "WarpStrand-Driver",
+    "bin": "bash",
+    "args": ["-c", "source ~/TankuOS/Apps/warpstrand-driver/.venv/bin/activate && python ~/TankuOS/Apps/warpstrand-driver/warpwrap.py"],
+    "category": "Games",
+    "description": "Auto-player for WarpStrand MUD with split-screen TUI. Rules-driven character automation.",
+    "homepage": "https://github.com/KawasuTanku/WarpStrand-Driver",
+    "version": "0.1.0"
   }
 ]

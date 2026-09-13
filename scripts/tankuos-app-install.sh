@@ -12,11 +12,17 @@ APP_NAME="${1:-}"
 SOURCE_PATH="${2:-}"
 
 if [ -z "$APP_NAME" ]; then
-    echo "Usage: tankuos-app-install <app-name> [source-path]"
+    echo "Usage: tankuos-app-install <app-name> <source>"
     echo ""
     echo "Examples:"
+    echo "  # Install from local path"
     echo "  tankuos-app-install warpstrand-driver ~/Projects/WarpStrand-Driver"
-    echo "  tankuos-app-install retirement ~/Projects/Retirement"
+    echo ""
+    echo "  # Install from GitHub"
+    echo "  tankuos-app-install warpstrand-driver https://github.com/KawasuTanku/WarpStrand-Driver.git"
+    echo ""
+    echo "  # Install multiple apps from catalog"
+    echo "  tankuos-app-install-all"
     exit 1
 fi
 
@@ -29,12 +35,16 @@ echo "Installing $APP_NAME to $APP_DIR..."
 # Create directory structure
 mkdir -p "$APP_DIR" "$CONFIGS_DIR"
 
-# Copy source if provided
+# Copy or clone source
 if [ -n "$SOURCE_PATH" ] && [ -d "$SOURCE_PATH" ]; then
     echo "Copying source from $SOURCE_PATH..."
-    # Copy everything except .venv and __pycache__
     rsync -a --exclude='.venv/' --exclude='__pycache__/' --exclude='*.pyc' \
         "$SOURCE_PATH/" "$APP_DIR/"
+elif [ -n "$GITHUB_URL" ]; then
+    echo "Cloning from GitHub: $GITHUB_URL..."
+    git clone --depth 1 "$GITHUB_URL" "$APP_DIR"
+    # Remove .git to save space
+    rm -rf "$APP_DIR/.git"
 fi
 
 # Create venv
