@@ -119,7 +119,15 @@ impl AppInstance {
         // (yazi, timg) probe for and treat as the authoritative capability signal.
         builder.env("TERM", "xterm-256color");
         builder.env("COLORTERM", "truecolor");
-        builder.env("TANKUOS_THEME", &crate::theme::current().name());
+        let t = crate::theme::current();
+        builder.env("TANKUOS_THEME", t.name());
+        // Export palette so hosted apps can theme themselves to match.
+        builder.env("TANKUOS_THEME_BG", &format!("{},{},{}", t.window_bg.r, t.window_bg.g, t.window_bg.b));
+        builder.env("TANKUOS_THEME_PANEL", &format!("{},{},{}", t.title_focus.r, t.title_focus.g, t.title_focus.b));
+        builder.env("TANKUOS_THEME_FG", &format!("{},{},{}", t.text.r, t.text.g, t.text.b));
+        builder.env("TANKUOS_THEME_ACCENT", &format!("{},{},{}", t.accent.r, t.accent.g, t.accent.b));
+        builder.env("TANKUOS_THEME_SECONDARY", &format!("{},{},{}", t.active_bg.r, t.active_bg.g, t.active_bg.b));
+        builder.env("TANKUOS_THEME_ERROR", &format!("{},{},{}", t.close_fg.r, t.close_fg.g, t.close_fg.b));
         // Start in the requested working directory, else the user's home.
         match cwd {
             Some(d) => builder.cwd(d),
