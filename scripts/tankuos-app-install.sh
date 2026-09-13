@@ -32,6 +32,13 @@ VENV_DIR="$APP_DIR/.venv"
 
 echo "Installing $APP_NAME to $APP_DIR..."
 
+# Preserve existing configs across reinstall/update.
+CONFIGS_TMP=""
+if [ -d "$CONFIGS_DIR" ] && [ "$(ls -A "$CONFIGS_DIR" 2>/dev/null)" ]; then
+    CONFIGS_TMP=$(mktemp -d)
+    cp -r "$CONFIGS_DIR/"* "$CONFIGS_TMP/" 2>/dev/null || true
+fi
+
 # Create directory structure
 mkdir -p "$APP_DIR" "$CONFIGS_DIR"
 
@@ -48,6 +55,12 @@ elif [ -n "$SOURCE_PATH" ]; then
     # Move contents into app dir
     mv "$tmp_dir"/* "$tmp_dir"/.[!.]* "$APP_DIR/" 2>/dev/null || true
     rm -rf "$tmp_dir"
+fi
+
+# Restore preserved configs
+if [ -n "$CONFIGS_TMP" ] && [ -d "$CONFIGS_TMP" ]; then
+    cp -r "$CONFIGS_TMP/"* "$CONFIGS_DIR/" 2>/dev/null || true
+    rm -rf "$CONFIGS_TMP"
 fi
 
 # Create venv

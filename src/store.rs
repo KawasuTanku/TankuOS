@@ -234,6 +234,8 @@ impl Store {
                 ("[ Enter: Launch ]", GREEN)
             };
             buf.write_str(dx + 1, h - 2, action, acol, PANEL);
+            // Keyboard shortcuts help.
+            buf.write_str(dx + 1, h - 1, "[u] update  [U] update all  [Enter] launch/install  [Esc] close", DIM, PANEL);
         }
 
         buf
