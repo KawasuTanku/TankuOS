@@ -1,5 +1,15 @@
 [
   {
+    "name": "MonsterTerm",
+    "bin": "MonsterTerm",
+    "args": [],
+    "category": "Finance",
+    "description": "Terminal dashboard for the Monster P&L tracker. View stats, inventory, and reports.",
+    "homepage": "https://github.com/KawasuTanku/MonsterTerm",
+    "version": "0.1.0",
+    "cli": true
+  },
+  {
     "name": "Retirement",
     "bin": "Retirement",
     "args": [],

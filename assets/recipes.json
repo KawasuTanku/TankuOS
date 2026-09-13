@@ -1,4 +1,12 @@
 {
+  "MonsterTerm": {
+    "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh MonsterTerm https://github.com/KawasuTanku/MonsterTerm.git",
+    "method": "tankuos-app",
+    "os": ["linux"],
+    "requires_cwd": false,
+    "tip": "Installs to ~/TankuOS/Apps/MonsterTerm/ with isolated venv. Set MONSTER_TOKEN in .env to enable API access.",
+    "verified": true
+  },
   "Retirement": {
     "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh Retirement https://github.com/KawasuTanku/Retirement.git",
     "method": "tankuos-app",
