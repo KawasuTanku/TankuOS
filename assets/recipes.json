@@ -3,7 +3,7 @@
     "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh Retirement https://github.com/KawasuTanku/Retirement.git",
     "method": "tankuos-app",
     "os": ["linux"],
-    "requires_cwd": true,
+    "requires_cwd": false,
     "tip": "Installs to ~/TankuOS/Apps/Retirement/ with isolated venv. Set ROBINHOOD_USERNAME/PASSWORD in ~/.env to fetch holdings.",
     "verified": true
   },
