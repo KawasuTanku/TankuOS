@@ -106,16 +106,16 @@ BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
 BIN_NAME="tankuos-app-${APP_NAME}"
 BIN_PATH="$BIN_DIR/$BIN_NAME"
-cat > "$BIN_PATH" << EOF
+cat > "$BIN_PATH" << 'WRAPPER'
 #!/bin/sh
-# TankuOS app wrapper for $APP_NAME
 set -eu
-APP_DIR="$APP_DIR"
-export XDG_CONFIG_HOME="\$APP_DIR/configs"
-source "$APP_DIR/.venv/bin/activate"
+APP_DIR="__APP_DIR__"
+export XDG_CONFIG_HOME="$APP_DIR/configs"
+. "$APP_DIR/.venv/bin/activate"
 cd "$APP_DIR"
-exec python "$APP_DIR/warpwrap.py" "\$@"
-EOF
+exec python "$APP_DIR/warpwrap.py" "$@"
+WRAPPER
+sed -i "s|__APP_DIR__|$APP_DIR|g" "$BIN_PATH"
 chmod +x "$BIN_PATH"
 
 echo ""
