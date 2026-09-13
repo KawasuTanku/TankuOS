@@ -57,7 +57,7 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 # Activate and install dependencies
-source "$VENV_DIR/bin/activate"
+. "$VENV_DIR/bin/activate"
 
 if [ -f "$APP_DIR/requirements.txt" ]; then
     echo "Installing requirements..."
