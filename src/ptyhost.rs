@@ -119,6 +119,7 @@ impl AppInstance {
         // (yazi, timg) probe for and treat as the authoritative capability signal.
         builder.env("TERM", "xterm-256color");
         builder.env("COLORTERM", "truecolor");
+        builder.env("TANKUOS_THEME", &crate::theme::current().name());
         // Start in the requested working directory, else the user's home.
         match cwd {
             Some(d) => builder.cwd(d),

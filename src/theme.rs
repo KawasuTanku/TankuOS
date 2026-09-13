@@ -6,7 +6,7 @@ use crate::cell::Rgba;
 use std::sync::{OnceLock, RwLock};
 
 /// A complete desktop palette. `Copy` so render code can cheaply snapshot it.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Theme {
     pub desktop_bg: Rgba,
     pub window_bg: Rgba,
@@ -144,6 +144,15 @@ impl Theme {
             "osaka-jade" | "osaka_jade" | "osakajade" => Self::osaka_jade(),
             _ => Self::midnight(),
         }
+    }
+
+    /// Theme name for this preset.
+    pub fn name(&self) -> &'static str {
+        if *self == Self::nord() { "nord" }
+        else if *self == Self::gruvbox() { "gruvbox" }
+        else if *self == Self::dracula() { "dracula" }
+        else if *self == Self::osaka_jade() { "osaka-jade" }
+        else { "midnight" }
     }
 }
 
