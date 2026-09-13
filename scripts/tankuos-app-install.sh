@@ -40,11 +40,14 @@ if [ -n "$SOURCE_PATH" ] && [ -d "$SOURCE_PATH" ]; then
     echo "Copying source from $SOURCE_PATH..."
     rsync -a --exclude='.venv/' --exclude='__pycache__/' --exclude='*.pyc' \
         "$SOURCE_PATH/" "$APP_DIR/"
-elif [ -n "$GITHUB_URL" ]; then
-    echo "Cloning from GitHub: $GITHUB_URL..."
-    git clone --depth 1 "$GITHUB_URL" "$APP_DIR"
-    # Remove .git to save space
-    rm -rf "$APP_DIR/.git"
+elif [ -n "$SOURCE_PATH" ]; then
+    echo "Cloning from: $SOURCE_PATH..."
+    tmp_dir=$(mktemp -d)
+    git clone --depth 1 "$SOURCE_PATH" "$tmp_dir"
+    rm -rf "$tmp_dir/.git"
+    # Move contents into app dir
+    mv "$tmp_dir"/* "$tmp_dir"/.[!.]* "$APP_DIR/" 2>/dev/null || true
+    rm -rf "$tmp_dir"
 fi
 
 # Create venv

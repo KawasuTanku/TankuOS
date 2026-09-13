@@ -103,15 +103,55 @@ pub fn runs_on_current_os(name: &str) -> bool {
 }
 
 /// The parsed catalog, loaded once on first use.
+/// Checks for a local override at ~/.config/TankuOS/local-catalog.json first.
 pub fn catalog() -> &'static [CatalogApp] {
     static CATALOG: OnceLock<Vec<CatalogApp>> = OnceLock::new();
-    CATALOG.get_or_init(|| serde_json::from_str(CATALOG_JSON).unwrap_or_default())
+    CATALOG.get_or_init(|| {
+        // Check for local override first
+        let local_path = std::env::var("XDG_CONFIG_HOME")
+            .map(|p| std::path::PathBuf::from(p))
+            .unwrap_or_else(|_| {
+                std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                    .join(".config")
+            })
+            .join("TankuOS")
+            .join("local-catalog.json");
+        
+        if local_path.exists() {
+            if let Ok(text) = std::fs::read_to_string(&local_path) {
+                if let Ok(local) = serde_json::from_str::<Vec<CatalogApp>>(&text) {
+                    return local;
+                }
+            }
+        }
+        // Fall back to built-in catalog
+        serde_json::from_str(CATALOG_JSON).unwrap_or_default()
+    })
 }
 
 /// Curated install recipes keyed by app name, loaded once.
+/// Checks for a local override at ~/.config/TankuOS/local-recipes.json first.
 pub fn recipes() -> &'static std::collections::HashMap<String, Recipe> {
     static RECIPES: OnceLock<std::collections::HashMap<String, Recipe>> = OnceLock::new();
-    RECIPES.get_or_init(|| serde_json::from_str(RECIPES_JSON).unwrap_or_default())
+    RECIPES.get_or_init(|| {
+        let local_path = std::env::var("XDG_CONFIG_HOME")
+            .map(|p| std::path::PathBuf::from(p))
+            .unwrap_or_else(|_| {
+                std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                    .join(".config")
+            })
+            .join("TankuOS")
+            .join("local-recipes.json");
+        
+        if local_path.exists() {
+            if let Ok(text) = std::fs::read_to_string(&local_path) {
+                if let Ok(local) = serde_json::from_str(&text) {
+                    return local;
+                }
+            }
+        }
+        serde_json::from_str(RECIPES_JSON).unwrap_or_default()
+    })
 }
 
 /// The curated install recipe for `name`, if one exists.
