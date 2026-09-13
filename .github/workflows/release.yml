@@ -113,14 +113,24 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          rustc --version
+
       - name: Add Rust target
-        run: rustup target add ${{ matrix.target }}
+        run: |
+          source $HOME/.cargo/env
+          rustup target add ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: |
+          source $HOME/.cargo/env
+          cargo build --release --target ${{ matrix.target }}
 
       - name: Package
-        run: tar -C target/${{ matrix.target }}/release -czf tankuos-${{ matrix.target }}.tar.gz tankuos
+        run: tar -C target/${{ matrix.target }}/release -czf TankuOS-${{ matrix.target }}.tar.gz TankuOS
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
@@ -129,4 +139,4 @@ jobs:
           # else attaches to the existing tag's release.
           tag_name: ${{ needs.decide.outputs.tag }}
           body: "See CHANGELOG.md for the full release notes."
-          files: tankuos-${{ matrix.target }}.tar.gz
+          files: TankuOS-${{ matrix.target }}.tar.gz

@@ -1,6 +1,6 @@
 [package]
 name = "TankuOS"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2021"
 rust-version = "1.95"
 license = "MIT"
@@ -24,10 +24,10 @@ flate2 = "1"
 libc = "0.2"
 
 [lib]
-name = "tankuos"
+name = "TankuOS"
 path = "src/lib.rs"
 
 [[bin]]
-name = "tankuos"
+name = "TankuOS"
 path = "src/main.rs"
 

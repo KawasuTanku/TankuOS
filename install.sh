@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # TankuOS installer — downloads the latest prebuilt binary for your platform.
 #
-#   curl -fsSL https://raw.githubusercontent.com/KawasuTanku/TankuOS/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/KawasuTanku/TankuOS/main/install.sh | bash
 #
 # Override the install directory with TANKUOS_BIN_DIR (default: ~/.local/bin).
-set -eu
+set -euo pipefail
 
 REPO="KawasuTanku/TankuOS"
 BIN_DIR="${TANKUOS_BIN_DIR:-$HOME/.local/bin}"
@@ -13,7 +13,7 @@ BIN_DIR="${TANKUOS_BIN_DIR:-$HOME/.local/bin}"
 fetch() {
   if command -v curl >/dev/null 2>&1; then curl -fsSL "$1"
   elif command -v wget >/dev/null 2>&1; then wget -qO- "$1"
-  else echo "tankuos: need curl or wget to download" >&2; return 1
+  else echo "TankuOS: need curl or wget to download" >&2; return 1
   fi
 }
 
@@ -46,55 +46,53 @@ case "$os/$arch" in
   Linux/x86_64)        target="x86_64-unknown-linux-gnu" ;;
   Linux/aarch64)       target="aarch64-unknown-linux-gnu" ;;
   *)
-    echo "tankuos: no prebuilt binary for $os/$arch."
+    echo "TankuOS: no prebuilt binary for $os/$arch."
     echo "Install with Rust instead:  cargo install --git https://github.com/$REPO"
     exit 1 ;;
 esac
 
-echo "tankuos: finding latest release…"
+echo "TankuOS: finding latest release…"
 tag="$(latest_tag || true)"
 if [ -z "${tag:-}" ]; then
-  echo "tankuos: couldn't resolve the latest release (GitHub unreachable or rate-limited)."
+  echo "TankuOS: couldn't resolve the latest release (GitHub unreachable or rate-limited)."
   echo "Install with Rust instead:  cargo install --git https://github.com/$REPO"
   exit 1
 fi
 
-url="https://github.com/$REPO/releases/download/$tag/tankuos-$target.tar.gz"
-echo "tankuos: downloading $tag ($target)…"
+url="https://github.com/$REPO/releases/download/$tag/TankuOS-$target.tar.gz"
+echo "TankuOS: downloading $tag ($target)…"
 mkdir -p "$BIN_DIR"
-if ! fetch "$url" | tar -xz -C "$BIN_DIR" 2>/dev/null || [ ! -f "$BIN_DIR/tankuos" ]; then
-  echo "tankuos: no prebuilt binary for $target in $tag."
+tmp_dir="$(mktemp -d)"
+if ! fetch "$url" | tar -xz -C "$tmp_dir" 2>/dev/null || [ ! -f "$tmp_dir/TankuOS" ]; then
+  echo "TankuOS: no prebuilt binary for $target in $tag."
   echo "Install with Rust instead:  cargo install --git https://github.com/$REPO"
+  rm -rf "$tmp_dir"
   exit 1
 fi
-chmod +x "$BIN_DIR/tankuos"
+# Atomic install
+mv -f "$tmp_dir/TankuOS" "$BIN_DIR/TankuOS"
+rm -rf "$tmp_dir"
+chmod +x "$BIN_DIR/TankuOS"
 
-echo "tankuos: installed $tag -> $BIN_DIR/tankuos"
+echo "TankuOS: installed $tag -> $BIN_DIR/TankuOS"
 
-# Optional, OS-aware dependency step. Installs helpers some features need:
-#   blueutil (macOS)  — Bluetooth tray control
-#   gpm (Linux)       — mouse on a bare console / VT
-#   sshpass           — automates the one-time password for Systems → Add Remote
-# Transparent and skippable: it prints what it runs, skips silently with no
-# package manager, honours TANKUOS_SKIP_DEPS, and in a non-interactive
-# `curl | sh` requires explicit TANKUOS_INSTALL_DEPS=1 so piping the installer
-# never surprises you with package installs.
+# Optional dependency step
 install_optional_deps() {
   [ "${TANKUOS_SKIP_DEPS:-0}" = "1" ] && return 0
   if [ ! -t 0 ] && [ "${TANKUOS_INSTALL_DEPS:-0}" != "1" ]; then return 0; fi
   case "$(uname -s)" in
     Darwin)
       if command -v brew >/dev/null 2>&1; then
-        if ! command -v blueutil >/dev/null 2>&1; then
-          echo "tankuos: installing optional dependency blueutil (Bluetooth control)…"
-          brew install blueutil || echo "tankuos: blueutil install skipped (run 'brew install blueutil' later for Bluetooth control)"
-        fi
-        if ! command -v sshpass >/dev/null 2>&1; then
-          echo "tankuos: installing optional dependency sshpass (remote-system setup)…"
+        command -v blueutil >/dev/null 2>&1 || {
+          echo "TankuOS: installing optional dependency blueutil…"
+          brew install blueutil || echo "TankuOS: blueutil install skipped"
+        }
+        command -v sshpass >/dev/null 2>&1 || {
+          echo "TankuOS: installing optional dependency sshpass…"
           brew install sshpass 2>/dev/null \
             || brew install esolitos/ipa/sshpass 2>/dev/null \
-            || echo "tankuos: sshpass install skipped (Add Remote will prompt for the password interactively instead)"
-        fi
+            || echo "TankuOS: sshpass install skipped"
+        }
       fi ;;
     Linux)
       pkgs=""
@@ -102,22 +100,19 @@ install_optional_deps() {
       command -v sshpass >/dev/null 2>&1 || pkgs="$pkgs sshpass"
       pkgs="$(echo "$pkgs" | sed 's/^ *//')"
       if [ -n "$pkgs" ]; then
-        echo "tankuos: installing optional dependencies: $pkgs …"
+        echo "TankuOS: installing optional dependencies: $pkgs …"
         sudo apt-get install -y $pkgs 2>/dev/null \
           || sudo dnf install -y $pkgs 2>/dev/null \
           || sudo pacman -S --noconfirm $pkgs 2>/dev/null \
           || sudo zypper install -y $pkgs 2>/dev/null \
-          || echo "tankuos: optional deps skipped (install '$pkgs' with your package manager later)"
-        if command -v gpm >/dev/null 2>&1 && command -v systemctl >/dev/null 2>&1; then
-          sudo systemctl enable --now gpm 2>/dev/null || true
-        fi
+          || echo "TankuOS: optional deps skipped"
       fi ;;
   esac
 }
 install_optional_deps
 
 case ":$PATH:" in
-  *":$BIN_DIR:"*) echo "Run it with:  tankuos" ;;
-  *) echo "Add $BIN_DIR to your PATH, then run:  tankuos"
-     echo "  e.g.  echo 'export PATH=\"$BIN_DIR:\$PATH\"' >> ~/.zprofile" ;;
+  *":$BIN_DIR:"*) echo "Run it with:  TankuOS" ;;
+  *) echo "Add $BIN_DIR to your PATH, then run:  TankuOS"
+     echo "  e.g.  echo 'export PATH=\"$BIN_DIR:\$PATH\"' >> ~/.bashrc" ;;
 esac
