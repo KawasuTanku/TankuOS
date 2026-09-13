@@ -38,7 +38,16 @@ pub const AGENTS: &[&str] = &["opencode", "hermes"];
 /// install it rather than spawning a missing binary.
 pub fn resolve_agent(cfg_command: Option<&str>, cfg_args: &[String]) -> Option<(String, Vec<String>)> {
     match cfg_command.map(str::trim).filter(|c| !c.is_empty()) {
-        Some(cmd) => Some((cmd.to_string(), cfg_args.to_vec())),
+        Some(cmd) => {
+            // Split multi-word command into argv[0] + args.
+            // e.g. "herdr --remote hermes@host" → ("herdr", ["--remote", "hermes@host"])
+            let mut parts = cmd.split_whitespace();
+            let argv0 = parts.next()?.to_string();
+            let extra: Vec<String> = parts.map(String::from).collect();
+            let mut args = extra;
+            args.extend(cfg_args.iter().cloned());
+            Some((argv0, args))
+        }
         None => crate::catalog::is_installed(DEFAULT_AGENT)
             .then(|| (DEFAULT_AGENT.to_string(), cfg_args.to_vec())),
     }
@@ -186,6 +195,14 @@ mod tests {
             resolve_agent(Some("   "), &[]).map(|(c, _)| c),
             resolve_agent(None, &[]).map(|(c, _)| c)
         );
+    }
+
+    #[test]
+    fn multi_word_command_is_split_into_argv() {
+        let (cmd, args) =
+            resolve_agent(Some("herdr --remote hermes@host"), &[]).unwrap();
+        assert_eq!(cmd, "herdr");
+        assert_eq!(args, vec!["--remote".to_string(), "hermes@host".to_string()]);
     }
 
     #[test]
