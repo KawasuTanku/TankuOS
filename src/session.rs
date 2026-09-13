@@ -4057,14 +4057,14 @@ or a remote-side error — its authorized_keys was left untouched)",
 /// `requires_cwd`/`cwd` are untouched by this — the shell still starts wherever
 /// the caller picked.
 fn cli_wrap(command: &str, args: &[String]) -> (String, Vec<String>) {
-    // Quote every word so an arg with spaces/quotes (from user config) can't
-    // splice into the script — same rule as every other shell command we build.
     let mut invocation = crate::systems::sh_quote(command);
     for a in args {
         invocation.push(' ');
         invocation.push_str(&crate::systems::sh_quote(a));
     }
-    let script = format!("{invocation} --help; exec \"${{SHELL:-sh}}\"");
+    // Run the tool, then drop to a shell so the output stays visible and
+    // the window doesn't auto-close on short-lived CLI tools.
+    let script = format!("{invocation}; exec \"${{SHELL:-sh}}\"");
     ("sh".into(), vec!["-lc".into(), script])
 }
 
