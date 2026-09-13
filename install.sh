@@ -72,7 +72,6 @@ if ! fetch "$url" | tar -xz -C "$tmp_dir" 2>/dev/null || [ ! -f "$tmp_dir/TankuO
 fi
 # Atomic install
 mv -f "$tmp_dir/TankuOS" "$BIN_DIR/TankuOS"
-rm -rf "$tmp_dir"
 chmod +x "$BIN_DIR/TankuOS"
 
 echo "TankuOS: installed $tag -> $BIN_DIR/TankuOS"
@@ -81,6 +80,9 @@ echo "TankuOS: installed $tag -> $BIN_DIR/TankuOS"
 mkdir -p "$SHARE_DIR/scripts"
 cp -f "$tmp_dir/scripts/"* "$SHARE_DIR/scripts/" 2>/dev/null || true
 chmod +x "$SHARE_DIR/scripts/"* 2>/dev/null || true
+
+# Clean up temp dir after extracting scripts
+rm -rf "$tmp_dir"
 
 # Optional dependency step
 install_optional_deps() {
