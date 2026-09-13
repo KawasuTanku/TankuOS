@@ -63,7 +63,7 @@ enum WinContent {
     ImageView(crate::imageview::ImageView),
     /// The native file manager (local disk or a remote system over ssh).
     FileManager(crate::filemanager::DynFileManager),
-    /// The native log viewer (tail of ~/tankuos-debug.log + clipboard copy).
+    /// The native log viewer (tail of ~/TankuOS-debug.log + clipboard copy).
     Logs(crate::logsview::LogsView),
     /// The activity monitor — a live table of hosted apps with kill-app controls.
     Activity(Activity),
@@ -293,7 +293,7 @@ pub enum ClientMsg {
     LaunchWarnYes,
     /// Dismiss the launch-warning dialog (Esc / n) without launching.
     LaunchWarnNo,
-    /// Shut down the daemon entirely (kills all apps). Sent by `tankuos kill`.
+    /// Shut down the daemon entirely (kills all apps). Sent by `TankuOS kill`.
     Shutdown,
     /// Restart the frontend only, keeping the apphost (and apps) alive.
     Reload,
@@ -1152,7 +1152,7 @@ impl SessionCore {
         self.tray_state = state;
     }
 
-    /// Whether `tankuos kill` requested a full daemon shutdown.
+    /// Whether `TankuOS kill` requested a full daemon shutdown.
     pub fn shutdown_requested(&self) -> bool { self.shutdown }
 
     /// Whether a frontend-only reload was requested (apps stay alive).
@@ -1512,11 +1512,11 @@ or a remote-side error — its authorized_keys was left untouched)",
         }
         match msg {
             ClientMsg::Launch { name, command, args } => {
-                // The `tankuos launch` escape hatch (CLI / assistant / dock pins).
+                // The `TankuOS launch` escape hatch (CLI / assistant / dock pins).
                 // A bare launch of a catalog-flagged CLI tool would open a window
                 // that prints usage and instantly dies, so give it the same
                 // help-then-shell wrapper as the launcher menu. Explicit args mean
-                // an intentional invocation (`tankuos launch gum choose a b`) —
+                // an intentional invocation (`TankuOS launch gum choose a b`) —
                 // run those as given.
                 let (command, args) = if args.is_empty()
                     && (crate::catalog::is_cli(&command) || crate::catalog::is_cli(&name))
@@ -4091,17 +4091,17 @@ fn update_command(branch: &str) -> String {
     // Reload via the freshly-installed binary's ABSOLUTE path, not a bare
     // `tankuos`. The updater runs in a non-interactive `sh -lc`, whose PATH may
     // not include the install dir (~/.local/bin is added by interactive zsh
-    // config, not a login `sh`). If `tankuos reload` isn't found, the install
+    // config, not a login `sh`). If `TankuOS reload` isn't found, the install
     // still succeeds but the daemon never restarts onto the new binary — so
     // the running version never changes and the update appears to "keep
     // failing". install.sh lands the binary in `exe_dir` (TANKUOS_BIN_DIR), and
     // the cargo `--root` fallback targets the same dir, so `{exe_dir}/tankuos` is
     // the new binary in both paths.
     let reload = crate::systems::sh_quote(&format!("{exe_dir}/tankuos"));
-    // Append each step to ~/tankuos-debug.log (same file as dbg_log) so a failed
+    // Append each step to ~/TankuOS-debug.log (same file as dbg_log) so a failed
     // update is visible in the log the user pastes — the install runs in a
     // window whose output is otherwise lost.
-    let log = "\"$HOME/tankuos-debug.log\"";
+    let log = "\"$HOME/TankuOS-debug.log\"";
     if branch == "main" {
         format!(
             "clear; echo 'Updating tankuos (latest release)…'; echo; \
@@ -4377,8 +4377,8 @@ mod tests {
         assert!(cmd.contains("install.sh"), "fast path is the prebuilt release: {cmd}");
         assert!(cmd.contains("cargo install --git"), "with a source fallback");
         assert!(cmd.contains("/tankuos' reload"), "reloads via the installed binary's absolute path: {cmd}");
-        assert!(!cmd.contains("; tankuos reload"), "must not rely on PATH-resolving a bare `tankuos`: {cmd}");
-        assert!(cmd.contains("tankuos-debug.log"), "logs each step to the debug log");
+        assert!(!cmd.contains("; TankuOS reload"), "must not rely on PATH-resolving a bare `tankuos`: {cmd}");
+        assert!(cmd.contains("TankuOS-debug.log"), "logs each step to the debug log");
         assert!(cmd.contains("exit 0"), "exits so the updater window auto-closes");
         assert!(!cmd.contains("--branch"), "main needs no branch flag");
     }

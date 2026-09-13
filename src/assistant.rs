@@ -22,7 +22,7 @@ const SYSTEMS_MD: &str = include_str!("../agent/SYSTEMS.md");
 const TROUBLESHOOTING_MD: &str = include_str!("../agent/TROUBLESHOOTING.md");
 const RULES_MD: &str = include_str!("../agent/RULES.md");
 
-/// The agent CLI tankuos launches by default. Override with `assistant_command`
+/// The agent CLI TankuOS launches by default. Override with `assistant_command`
 /// in config.toml to point the panel at a different binary.
 pub const DEFAULT_AGENT: &str = "opencode";
 
@@ -148,15 +148,15 @@ mod tests {
             "TankuOS desktop assistant",
             "mini",
             crate::REPO_URL,
-            "tankuos launch",
-            "tankuos tile",
-            "tankuos theme",
-            "tankuos msg",
-            "tankuos-debug.log",
+            "TankuOS launch",
+            "TankuOS tile",
+            "TankuOS theme",
+            "TankuOS msg",
+            "TankuOS-debug.log",
             "config.toml",
             "systems.toml",
             "pull request",
-            "Never run `tankuos kill`",
+            "Never run `TankuOS kill`",
             // Cross-machine operations: the saved system appears with its port,
             // and the scp/ssh recipes are present.
             "me@10.0.0.7",
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn pack_written_as_agents_md_and_cleans_retired_files() {
-        let dir = std::env::temp_dir().join(format!("tankuos-assist-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("TankuOS-assist-test-{}", std::process::id()));
         // Simulate an upgrade: a workdir left by the old multi-framework stamping.
         std::fs::create_dir_all(dir.join("knowledge")).unwrap();
         std::fs::write(dir.join("CLAUDE.md"), "stale").unwrap();
@@ -217,7 +217,7 @@ mod tests {
         // A bare name that surely isn't installed reports unavailable.
         assert!(!agent_available("definitely-not-a-real-binary-xyz"));
         // An explicit path is checked on disk (and, on Unix, must be executable).
-        let f = std::env::temp_dir().join(format!("tankuos-agent-{}", std::process::id()));
+        let f = std::env::temp_dir().join(format!("TankuOS-agent-{}", std::process::id()));
         std::fs::write(&f, "#!/bin/sh\n").unwrap();
         #[cfg(unix)]
         {

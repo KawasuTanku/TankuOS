@@ -18,9 +18,9 @@ pub enum HostReq {
     SetMeta { app: u64, meta: Vec<u8> },
     Kill { app: u64 },
     /// Ask the apphost to enumerate its hosted apps. The apphost replies with
-    /// `HostEvt::AppList`. Used by `tankuos ps` / `tankuos kill-app`.
+    /// `HostEvt::AppList`. Used by `tankuos ps` / `TankuOS kill-app`.
     ListApps,
-    /// Stop the apphost process entirely (full shutdown / `tankuos kill`).
+    /// Stop the apphost process entirely (full shutdown / `TankuOS kill`).
     Shutdown,
 }
 

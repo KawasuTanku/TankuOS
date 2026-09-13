@@ -1,5 +1,5 @@
 //! The built-in Logs viewer (launcher → tankuos → Logs): a scrollable window over
-//! `~/tankuos-debug.log` with one-key copy of the log to the host terminal's
+//! `~/TankuOS-debug.log` with one-key copy of the log to the host terminal's
 //! clipboard (OSC 52 — works in Ghostty/Kitty/WezTerm and over ssh).
 //!
 //! Logging is always on (see [`crate::dbg_log`]), so this window has content
@@ -34,7 +34,7 @@ impl Default for LogsView {
 
 /// The log file path shown and read by the viewer.
 pub fn log_path() -> Option<std::path::PathBuf> {
-    dirs::home_dir().map(|h| h.join("tankuos-debug.log"))
+    dirs::home_dir().map(|h| h.join("TankuOS-debug.log"))
 }
 
 impl LogsView {

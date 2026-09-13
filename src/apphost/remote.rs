@@ -177,7 +177,7 @@ fn apply_evt(evt: HostEvt, cache: &Arc<Mutex<Cache>>, pending: &Pending, infligh
             }
         }
         HostEvt::AppList { .. } => {
-            // Reply to HostReq::ListApps (used by `tankuos ps` / `tankuos kill-app`).
+            // Reply to HostReq::ListApps (used by `tankuos ps` / `TankuOS kill-app`).
             // The remote handle isn't the consumer — those CLI commands open a
             // short-lived connection and read the reply themselves, so we drop it.
         }
@@ -367,7 +367,7 @@ mod tests {
         let _ = server.join();
     }
 
-    /// `tankuos ps` / `tankuos kill-app` depend on `ListApps` round-tripping
+    /// `tankuos ps` / `TankuOS kill-app` depend on `ListApps` round-tripping
     /// correctly through a real server connection. Spawn 3 apps, list, assert
     /// the apphost reports 3 rows with the expected fields.
     #[test]

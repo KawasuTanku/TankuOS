@@ -79,7 +79,7 @@ fn serve_frontend(local: &mut LocalAppHost, stream: UnixStream, shutdown: &mut b
             .collect(),
         proto: crate::apphost::proto::PROTO_VERSION,
     };
-    // Best-effort: a short-lived connection (e.g. `tankuos kill` sending Shutdown)
+    // Best-effort: a short-lived connection (e.g. `TankuOS kill` sending Shutdown)
     // may close before we finish writing the roster. Don't abandon the
     // connection on that — we still want to read any pending command (Shutdown).
     let _ = send(&mut writer, &roster);

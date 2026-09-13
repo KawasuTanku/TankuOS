@@ -5,8 +5,8 @@ use std::io;
 use std::path::PathBuf;
 use std::process::Command;
 
-const LAUNCHD_LABEL: &str = "co.uk.janlabs.tankuos-apphost";
-const SYSTEMD_UNIT: &str = "tankuos-apphost.service";
+const LAUNCHD_LABEL: &str = "co.uk.janlabs.TankuOS-apphost";
+const SYSTEMD_UNIT: &str = "TankuOS-apphost.service";
 const PROFILE_START: &str = "# >>> tankuos apphost >>>";
 const PROFILE_END: &str = "# <<< tankuos apphost <<<";
 

@@ -1,4 +1,4 @@
-//! The tankuos daemon: owns the [`SessionCore`] (windows + PTYs) and serves frames
+//! The TankuOS daemon: owns the [`SessionCore`] (windows + PTYs) and serves frames
 //! to one attached client at a time over a Unix socket. Apps keep running while
 //! detached, so reattaching restores the live session.
 
@@ -16,7 +16,7 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::time::Duration;
 
-/// Out-of-band control messages (`tankuos launch/tile/theme/msg`) queued by the
+/// Out-of-band control messages (`TankuOS launch/tile/theme/msg`) queued by the
 /// control-socket thread and drained into the session by the render loop.
 type CtlQueue = Arc<std::sync::Mutex<Vec<ClientMsg>>>;
 
@@ -26,7 +26,7 @@ const CTL_NONE: u8 = 0;
 const CTL_SHUTDOWN: u8 = 1;
 const CTL_RELOAD: u8 = 2;
 
-/// Run the daemon event loop until `tankuos kill` (or a fatal socket error).
+/// Run the daemon event loop until `TankuOS kill` (or a fatal socket error).
 pub fn run() -> std::io::Result<()> {
     crate::dbg_init();
     // Confine the socket to a per-user 0700 directory so other local users
@@ -41,7 +41,7 @@ pub fn run() -> std::io::Result<()> {
     let listener = UnixListener::bind(&path)?;
     std::fs::set_permissions(&path, Permissions::from_mode(0o600))?;
 
-    // Out-of-band control socket so `tankuos kill` / `tankuos reload` are honored even
+    // Out-of-band control socket so `TankuOS kill` / `TankuOS reload` are honored even
     // while a client is attached (the client socket is served serially, so a
     // control message there would queue behind the attached client forever). A
     // listener thread reads Shutdown/Reload and flips this shared flag, which the
@@ -103,7 +103,7 @@ pub fn run() -> std::io::Result<()> {
     let mut comp = Compositor::new(w, h);
 
     // While unattached, the loop blocks in `accept()`; a control message can't be
-    // seen until a client connects. So `tankuos kill`/`reload` ALSO poke the main
+    // seen until a client connects. So `TankuOS kill`/`reload` ALSO poke the main
     // socket (a no-op connection) to wake this accept — see `main.rs`. Either way
     // we re-check the control flag on each wake.
     let mut reloading = false;
@@ -243,7 +243,7 @@ fn serve_client(
                 Err(mpsc::TryRecvError::Disconnected) => return, // client gone
             }
         }
-        // Out-of-band `tankuos kill` / `tankuos reload` (control socket) — honored even
+        // Out-of-band `TankuOS kill` / `TankuOS reload` (control socket) — honored even
         // though this client is attached.
         apply_ctl(ctl, ctl_queue, core);
         if core.shutdown_requested() {
@@ -357,7 +357,7 @@ fn apply_ctl(ctl: &Arc<AtomicU8>, queue: &CtlQueue, core: &mut SessionCore) -> b
 
 /// Accept control connections for the daemon's lifetime, flipping the shared flag
 /// on `Shutdown` / `Reload`. Each connection is one short-lived message from the
-/// `tankuos kill` / `tankuos reload` CLI.
+/// `TankuOS kill` / `TankuOS reload` CLI.
 fn serve_control(listener: UnixListener, ctl: Arc<AtomicU8>, queue: CtlQueue) {
     for stream in listener.incoming() {
         let Ok(stream) = stream else { continue };
@@ -367,7 +367,7 @@ fn serve_control(listener: UnixListener, ctl: Arc<AtomicU8>, queue: CtlQueue) {
             match serde_json::from_str::<ClientMsg>(line.trim()) {
                 Ok(ClientMsg::Shutdown) => ctl.store(CTL_SHUTDOWN, Ordering::SeqCst),
                 Ok(ClientMsg::Reload) => ctl.store(CTL_RELOAD, Ordering::SeqCst),
-                // Any other message (e.g. `tankuos launch/tile/theme/msg` from the
+                // Any other message (e.g. `TankuOS launch/tile/theme/msg` from the
                 // CLI or the desktop assistant) queues for the render loop.
                 Ok(msg) => {
                     crate::dbg_log(&format!("ctl: queued {msg:?}"));

@@ -52,18 +52,18 @@ pub const GIT_SHA: &str = env!("TANKUOS_GIT_SHA");
 /// Upstream repository the in-app updater checks/installs from.
 pub const REPO_URL: &str = "https://github.com/KawasuTanku/TankuOS";
 
-/// Max size of `~/tankuos-debug.log` before it's reset, so a long-running session
+/// Max size of `~/TankuOS-debug.log` before it's reset, so a long-running session
 /// can't grow it without bound.
 const DBG_LOG_MAX_BYTES: u64 = 4 * 1024 * 1024;
 
-/// Append a timestamped line to `~/tankuos-debug.log`. Always on — events are
+/// Append a timestamped line to `~/TankuOS-debug.log`. Always on — events are
 /// low-frequency and the in-app Logs viewer (launcher → tankuos → Logs) reads
 /// this file, so there must be something to show without re-running with an
 /// env var. The log is capped at [`DBG_LOG_MAX_BYTES`]: once exceeded it's
 /// reset (keeping the most recent activity), so it never grows out of hand.
 pub fn dbg_log(msg: &str) {
     let Some(home) = dirs::home_dir() else { return };
-    let path = home.join("tankuos-debug.log");
+    let path = home.join("TankuOS-debug.log");
     use std::io::Write;
     // Reset the log if it has grown past the cap (events are low-frequency, so the
     // per-call stat is negligible).
@@ -81,7 +81,7 @@ pub fn dbg_log(msg: &str) {
     }
 }
 
-/// Append a session-start banner to `~/tankuos-debug.log` (running version, git
+/// Append a session-start banner to `~/TankuOS-debug.log` (running version, git
 /// sha, and binary path). Called once at daemon startup.
 ///
 /// Deliberately APPENDS rather than truncates: when an in-app update reloads

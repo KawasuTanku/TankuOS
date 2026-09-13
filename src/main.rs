@@ -3,13 +3,13 @@
 //! - `tankuos`            ensure the daemon is running, then attach a client.
 //! - `tankuos attach`     attach to an already-running daemon.
 //! - `tankuos --daemon`   run the daemon (normally spawned automatically).
-//! - `tankuos kill`       shut the daemon down (closing all windows).
-//! - `tankuos reload`     restart the frontend only; apps keep running.
+//! - `TankuOS kill`       shut the daemon down (closing all windows).
+//! - `TankuOS reload`     restart the frontend only; apps keep running.
 //! - `tankuos service …`  install|uninstall|status the per-user apphost service.
-//! - `tankuos launch …`   open a new app window in the running desktop.
-//! - `tankuos tile`       tile all windows into the configured grid.
-//! - `tankuos theme <t>`  switch the theme.
-//! - `tankuos msg '<j>'`  send a raw ClientMsg (the assistant's escape hatch).
+//! - `TankuOS launch …`   open a new app window in the running desktop.
+//! - `TankuOS tile`       tile all windows into the configured grid.
+//! - `TankuOS theme <t>`  switch the theme.
+//! - `TankuOS msg '<j>'`  send a raw ClientMsg (the assistant's escape hatch).
 //!
 //! The daemon owns the windows and child processes and persists across client
 //! detaches, so closing a client (or an SSH disconnect) leaves everything running.
@@ -44,7 +44,7 @@ fn main() -> std::io::Result<()> {
         Some("launch") => {
             let mut rest = std::env::args().skip(2);
             let Some(command) = rest.next() else {
-                eprintln!("usage: tankuos launch <command> [args…]");
+                eprintln!("usage: TankuOS launch <command> [args…]");
                 return Ok(());
             };
             let args: Vec<String> = rest.collect();
@@ -55,7 +55,7 @@ fn main() -> std::io::Result<()> {
         Some("theme") => match std::env::args().nth(2) {
             Some(name) => ctl(&TankuOS::session::ClientMsg::SetTheme(name)),
             None => {
-                eprintln!("usage: tankuos theme <{}>", TankuOS::theme::PRESETS.join("|"));
+                eprintln!("usage: TankuOS theme <{}>", TankuOS::theme::PRESETS.join("|"));
                 Ok(())
             }
         },
@@ -63,12 +63,12 @@ fn main() -> std::io::Result<()> {
             Some(json) => match serde_json::from_str::<TankuOS::session::ClientMsg>(&json) {
                 Ok(msg) => ctl(&msg),
                 Err(e) => {
-                    eprintln!("tankuos msg: not a valid ClientMsg: {e}");
+                    eprintln!("TankuOS msg: not a valid ClientMsg: {e}");
                     Ok(())
                 }
             },
             None => {
-                eprintln!("usage: tankuos msg '<ClientMsg JSON>'  e.g.  tankuos msg '\"MaximizeFocused\"'");
+                eprintln!("usage: TankuOS msg '<ClientMsg JSON>'  e.g.  TankuOS msg '\"MaximizeFocused\"'");
                 Ok(())
             }
         },
@@ -82,7 +82,7 @@ fn main() -> std::io::Result<()> {
     }
 }
 
-/// Send one control message to the running daemon (used by `tankuos launch/tile/
+/// Send one control message to the running daemon (used by `TankuOS launch/tile/
 /// theme/msg` — and by the desktop assistant to drive the UI).
 fn ctl(msg: &TankuOS::session::ClientMsg) -> std::io::Result<()> {
     if send_control(msg)? {
@@ -153,7 +153,7 @@ fn run_switch(spec: &TankuOS::systems::SwitchSpec) {
     );
     let script = TankuOS::systems::switch_script(spec);
     // With TANKUOS_DEBUG set, show exactly what will run (the password is never
-    // embedded in the script) and mirror it to ~/tankuos-debug.log.
+    // embedded in the script) and mirror it to ~/TankuOS-debug.log.
     if std::env::var_os("TANKUOS_DEBUG").is_some() {
         eprintln!("tankuos: switch script:\n{script}");
     }
@@ -175,7 +175,7 @@ fn run_switch(spec: &TankuOS::systems::SwitchSpec) {
         Ok(status) => {
             TankuOS::dbg_log(&format!("switch: ended with {status}"));
             eprintln!("tankuos: switch to {} ended with {status} — back to this machine.", spec.name);
-            eprintln!("tankuos: (re-run with TANKUOS_DEBUG=1 to see the exact script; log: ~/tankuos-debug.log)");
+            eprintln!("tankuos: (re-run with TANKUOS_DEBUG=1 to see the exact script; log: ~/TankuOS-debug.log)");
         }
         Err(e) => {
             TankuOS::dbg_log(&format!("switch: could not run sh/ssh: {e}"));
@@ -427,7 +427,7 @@ fn ps() -> std::io::Result<()> {
     Ok(())
 }
 
-/// `tankuos kill-app <id|all>` — send `HostReq::Kill` for one (or all dead)
+/// `TankuOS kill-app <id|all>` — send `HostReq::Kill` for one (or all dead)
 /// hosted apps. `<id>` may be the apphost's numeric AppId. `all` is a safe
 /// cleanup target: it kills only apps in the `dead` state (already exited);
 /// live apps need an explicit id. Errors clearly when the apphost isn't
@@ -437,7 +437,7 @@ fn kill_app(args: &[String]) -> std::io::Result<()> {
     let target = match args.first().map(String::as_str) {
         Some(t) => t,
         None => {
-            eprintln!("usage: tankuos kill-app <id|all>");
+            eprintln!("usage: TankuOS kill-app <id|all>");
             std::process::exit(2);
         }
     };
@@ -452,14 +452,14 @@ fn kill_app(args: &[String]) -> std::io::Result<()> {
         let id: u64 = match target.parse() {
             Ok(n) => n,
             Err(_) => {
-                eprintln!("tankuos kill-app: '{target}' is not a numeric id or 'all'");
+                eprintln!("TankuOS kill-app: '{target}' is not a numeric id or 'all'");
                 std::process::exit(2);
             }
         };
         if !apps.iter().any(|a| a.app == id) {
             let known: Vec<String> = apps.iter().map(|a| a.app.to_string()).collect();
             eprintln!(
-                "tankuos kill-app: no such app (have: {})",
+                "TankuOS kill-app: no such app (have: {})",
                 if known.is_empty() { "(none)".into() } else { known.join(", ") }
             );
             std::process::exit(1);
@@ -467,7 +467,7 @@ fn kill_app(args: &[String]) -> std::io::Result<()> {
         vec![id]
     };
     if to_kill.is_empty() {
-        println!("tankuos kill-app: no dead apps to reap");
+        println!("TankuOS kill-app: no dead apps to reap");
         return Ok(());
     }
     // Reconnect for each Kill — the previous connection's reader consumed
@@ -478,16 +478,16 @@ fn kill_app(args: &[String]) -> std::io::Result<()> {
         let mut s = match UnixStream::connect(&path) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("tankuos kill-app: connect failed: {e}");
+                eprintln!("TankuOS kill-app: connect failed: {e}");
                 std::process::exit(1);
             }
         };
         send(&mut s, &HostReq::Kill { app: *id })?;
     }
     if to_kill.len() == 1 {
-        println!("tankuos kill-app: sent kill to app {}", to_kill[0]);
+        println!("TankuOS kill-app: sent kill to app {}", to_kill[0]);
     } else {
-        println!("tankuos kill-app: sent kill to {} app(s)", to_kill.len());
+        println!("TankuOS kill-app: sent kill to {} app(s)", to_kill.len());
     }
     Ok(())
 }

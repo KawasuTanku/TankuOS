@@ -189,7 +189,7 @@ pub fn app_installed_status(name: &str) -> Option<bool> {
     let apps_dir = std::env::var("HOME").ok().map(|h| {
         std::path::PathBuf::from(h).join("TankuOS").join("Apps").join(name)
     })?;
-    let meta_file = apps_dir.join(".tankuos-meta.json");
+    let meta_file = apps_dir.join(".TankuOS-meta.json");
     if !meta_file.exists() {
         return None;
     }
