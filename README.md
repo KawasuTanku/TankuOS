@@ -37,6 +37,17 @@ Or install directly:
 curl -fsSL https://raw.githubusercontent.com/KawasuTanku/TankuOS/main/install.sh | sh
 ```
 
+### Security note on the one-liner installer
+
+The command above downloads and pipes `install.sh` straight into `sh` — a common pattern, but one that runs code from the internet without inspection. Before running it, you can review the script first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KawasuTanku/TankuOS/main/install.sh | less   # inspect
+curl -fsSL https://raw.githubusercontent.com/KawasuTanku/TankuOS/main/install.sh | sh       # run it
+```
+
+This also means a compromised repo could push a malicious installer — you're trusting the `KawasuTanku/TankuOS` repo and its release-signing controls. For an alternative that pins to a specific commit, see the `cargo install --git` path.
+
 ### Rust version note
 
 The upstream `Cargo.lock` uses lockfile v4 and some dependencies require Cargo features only available in newer Rust (edition2024). On Rust 1.75 (shipped with Ubuntu 24.04), you may need to `rm Cargo.lock` and let Cargo regenerate it, which may pull in newer dependency versions. For a guaranteed build, use Rust 1.95+ via [rustup](https://rustup.rs):

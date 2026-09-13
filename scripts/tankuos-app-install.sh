@@ -57,6 +57,23 @@ elif [ -n "$SOURCE_PATH" ]; then
     rm -rf "$tmp_dir"
 fi
 
+# Migrate .env credentials into the TankuOS configs dir
+# (.env is gitignored, so it won't be in cloned repos — check CWD for legacy)
+if [ -f ".env" ] && [ -s ".env" ]; then
+    echo "Migrating .env to configs..."
+    cp .env "$CONFIGS_DIR/.env"
+elif [ ! -f "$CONFIGS_DIR/.env" ]; then
+    # Create a template for the user to fill in
+    cat > "$CONFIGS_DIR/.env" << 'TEMPLATE'
+# Robinhood credentials for Retirement
+# Fill these in to enable --fetch
+ROBINHOOD_USERNAME=
+ROBINHOOD_PASSWORD=
+# Optional: 2FA TOTP secret (not the 6-digit code)
+ROBINHOOD_TOTP=
+TEMPLATE
+fi
+
 # Restore preserved configs
 if [ -n "$CONFIGS_TMP" ] && [ -d "$CONFIGS_TMP" ]; then
     cp -r "$CONFIGS_TMP/"* "$CONFIGS_DIR/" 2>/dev/null || true
@@ -113,13 +130,39 @@ cat > "$APP_DIR/.tankuos-meta.json" << EOF
 }
 EOF
 
-# Create unique bin wrapper for catalog detection
-# Name matches the project/repo name exactly
+# Create bin wrapper for catalog detection and PATH access
+# Name matches the repo/project name exactly (e.g. Retirement, WarpStrand-Driver)
 BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
 BIN_NAME="$APP_NAME"
 BIN_PATH="$BIN_DIR/$BIN_NAME"
-cat > "$BIN_PATH" << 'WRAPPER'
+
+# Determine how to launch: prefer the pip-installed entry point if the app
+# defines one in [project.scripts], otherwise fall back to a module/wrapper.
+ENTRY_POINT=""
+if [ -f "$APP_DIR/pyproject.toml" ]; then
+    ENTRY_POINT=$(python3 -c "
+import re
+with open('$APP_DIR/pyproject.toml') as f:
+    text = f.read()
+m = re.search(r'\[project\.scripts\]\s*\n\s*(\w+)\s*=\s*\"([^\"]+)\"', text)
+if m: print(m.group(1))
+" 2>/dev/null || true)
+fi
+
+if [ -n "$ENTRY_POINT" ]; then
+    # App defines a console_scripts entry point — exec the venv binary
+    cat > "$BIN_PATH" << WRAPPER
+#!/bin/sh
+set -eu
+export XDG_CONFIG_HOME="$APP_DIR/configs"
+. "$APP_DIR/.venv/bin/activate"
+cd "$APP_DIR"
+exec $ENTRY_POINT "\$@"
+WRAPPER
+else
+    # Fallback: exec a module/wrapper (e.g. WarpStrand-Driver's warpwrap.py)
+    cat > "$BIN_PATH" << 'WRAPPER'
 #!/bin/sh
 set -eu
 APP_DIR="__APP_DIR__"
@@ -128,7 +171,8 @@ export XDG_CONFIG_HOME="$APP_DIR/configs"
 cd "$APP_DIR"
 exec python "$APP_DIR/warpwrap.py" "$@"
 WRAPPER
-sed -i "s|__APP_DIR__|$APP_DIR|g" "$BIN_PATH"
+    sed -i "s|__APP_DIR__|$APP_DIR|g" "$BIN_PATH"
+fi
 chmod +x "$BIN_PATH"
 
 echo ""

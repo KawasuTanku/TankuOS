@@ -31,3 +31,4 @@ Thumbs.db
 # Project specific
 config.toml
 *.log
+target/

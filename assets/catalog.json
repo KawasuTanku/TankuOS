@@ -1,5 +1,15 @@
 [
   {
+    "name": "Retirement",
+    "bin": "Retirement",
+    "args": [],
+    "category": "Finance",
+    "description": "Portfolio tracker for Robinhood IRAs — fetches Traditional + Roth IRA holdings, shows gain/loss bar chart.",
+    "homepage": "https://github.com/KawasuTanku/Retirement",
+    "version": "0.1.0",
+    "cli": true
+  },
+  {
     "name": "WarpStrand-Driver",
     "bin": "WarpStrand-Driver",
     "args": [],
