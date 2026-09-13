@@ -69,9 +69,10 @@ fi
 # Migrate configs (app-specific)
 case "$APP_NAME" in
     warpstrand-driver)
+        mkdir -p "$CONFIGS_DIR/warpstrand"
         if [ -f ~/.config/warpstrand/client.yaml ]; then
             echo "Migrating WarpStrand config..."
-            cp ~/.config/warpstrand/client.yaml "$CONFIGS_DIR/"
+            cp ~/.config/warpstrand/client.yaml "$CONFIGS_DIR/warpstrand/"
         fi
         ;;
 esac
