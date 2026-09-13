@@ -15,6 +15,7 @@ if [ -z "$APP_NAME" ]; then
 fi
 
 APP_DIR="$APPS_DIR/$APP_NAME"
+BIN_DIR="$HOME/.local/bin"
 
 if [ ! -d "$APP_DIR" ]; then
     echo "App not installed: $APP_NAME"
@@ -22,6 +23,10 @@ if [ ! -d "$APP_DIR" ]; then
 fi
 
 echo "Uninstalling $APP_NAME..."
+
+# Remove the bin wrapper for this app (named exactly $APP_NAME).
+rm -f "$BIN_DIR/$APP_NAME" 2>/dev/null || true
+
 echo "  Removing $APP_DIR"
 rm -rf "$APP_DIR"
 
