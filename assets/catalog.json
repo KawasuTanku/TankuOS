@@ -1,7 +1,7 @@
 [
   {
     "name": "PocketVault",
-    "bin": "pocketvault",
+    "bin": "PocketVault",
     "args": [],
     "category": "Finance",
     "description": "Unified personal finance TUI — Crew budgeting, Monster P&L, Retirement IRAs. Press 'g' for settings, 's' to sync all.",
