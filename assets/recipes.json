@@ -1,18 +1,10 @@
 {
-  "MonsterTerm": {
-    "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh MonsterTerm https://github.com/KawasuTanku/MonsterTerm.git",
+  "PocketVault": {
+    "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh PocketVault https://github.com/KawasuTanku/PocketVault.git",
     "method": "tankuos-app",
     "os": ["linux"],
     "requires_cwd": false,
-    "tip": "Installs to ~/TankuOS/Apps/MonsterTerm/ with isolated venv. Set MONSTER_TOKEN in .env to enable API access.",
-    "verified": true
-  },
-  "Retirement": {
-    "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh Retirement https://github.com/KawasuTanku/Retirement.git",
-    "method": "tankuos-app",
-    "os": ["linux"],
-    "requires_cwd": false,
-    "tip": "Installs to ~/TankuOS/Apps/Retirement/ with isolated venv. Set ROBINHOOD_USERNAME/PASSWORD in ~/.env to fetch holdings.",
+    "tip": "Installs to ~/TankuOS/Apps/PocketVault/ with isolated venv. Press 'g' inside the app to configure API tokens (Crew, Monster, Robinhood).",
     "verified": true
   },
   "WarpStrand-Driver": {

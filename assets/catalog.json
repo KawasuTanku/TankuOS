@@ -1,23 +1,13 @@
 [
   {
-    "name": "MonsterTerm",
-    "bin": "MonsterTerm",
+    "name": "PocketVault",
+    "bin": "pocketvault",
     "args": [],
     "category": "Finance",
-    "description": "Terminal dashboard for the Monster P&L tracker. View stats, inventory, and reports.",
-    "homepage": "https://github.com/KawasuTanku/MonsterTerm",
+    "description": "Unified personal finance TUI — Crew budgeting, Monster P&L, Retirement IRAs. Press 'g' for settings, 's' to sync all.",
+    "homepage": "https://github.com/KawasuTanku/PocketVault",
     "version": "0.1.0",
-    "cli": true
-  },
-  {
-    "name": "Retirement",
-    "bin": "Retirement",
-    "args": [],
-    "category": "Finance",
-    "description": "Portfolio tracker for Robinhood IRAs — fetches Traditional + Roth IRA holdings, shows gain/loss bar chart.",
-    "homepage": "https://github.com/KawasuTanku/Retirement",
-    "version": "0.1.0",
-    "cli": true
+    "pty": true
   },
   {
     "name": "WarpStrand-Driver",
