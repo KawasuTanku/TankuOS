@@ -1,4 +1,12 @@
 {
+  "MailVault": {
+    "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh MailVault https://github.com/KawasuTanku/MailVault.git",
+    "method": "tankuos-app",
+    "os": ["linux"],
+    "requires_cwd": false,
+    "tip": "Installs to ~/TankuOS/Apps/MailVault/ with isolated venv. Use 'mailvault import-eml /path/to/archive' to bulk-import .eml files. Configure himalaya for live sync.",
+    "verified": true
+  },
   "PocketVault": {
     "install": "bash ~/.local/share/TankuOS/scripts/tankuos-app-install.sh PocketVault https://github.com/KawasuTanku/PocketVault.git",
     "method": "tankuos-app",

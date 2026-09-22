@@ -1,5 +1,15 @@
 [
   {
+    "name": "MailVault",
+    "bin": "MailVault",
+    "args": ["tui"],
+    "category": "Productivity",
+    "description": "Local email archive with full-text search. Import EML files, sync via himalaya, report spam, analyze headers. Press / to search, j/k to navigate, Enter to open.",
+    "homepage": "https://github.com/KawasuTanku/MailVault",
+    "version": "0.1.0",
+    "pty": true
+  },
+  {
     "name": "PocketVault",
     "bin": "PocketVault",
     "args": [],
