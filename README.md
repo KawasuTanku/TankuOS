@@ -2,7 +2,7 @@
 
 **TankuOS** is a desktop environment for the terminal — a windowing shell that runs *inside* your terminal emulator. Floating, overlapping windows, each hosting a real TUI application in its own pseudo-terminal, with a mouse cursor, menubar, dock, app launcher, and configurable grid tiling.
 
-This project is a fork of [tankuos](https://github.com/jaylfc/tankuos) by [jaylfc](https://github.com/jaylfc), modified to serve as the foundation for a unified terminal application suite. All credit goes to the original tankuos author for the architecture, compositor, PTY hosting, and window management that TankuOS builds on top of.
+This project is a fork of [tuiui](https://github.com/jaylfc/tuiui) by [jaylfc](https://github.com/jaylfc), modified to serve as the foundation for a unified terminal application suite. All credit goes to the original tankuos author for the architecture, compositor, PTY hosting, and window management that TankuOS builds on top of.
 
 ## What changed from tankuos
 
