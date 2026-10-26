@@ -103,7 +103,7 @@ MIT — same as the original tankuos. See `THIRD-PARTY-LICENSES.md` for bundled 
 
 ## Credits
 
-- [tankuos](https://github.com/jaylfc/tankuos) — original project by jaylfc (MIT)
+- [tuiui](https://github.com/jaylfc/tuiui) — original project by jaylfc (MIT)
 - [alacritty_terminal](https://docs.rs/alacritty_terminal) — terminal emulation
 - [crossterm](https://docs.rs/crossterm) — terminal I/O
 - [portable-pty](https://docs.rs/portable-pty) — pseudo-terminal support
